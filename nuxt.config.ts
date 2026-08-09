@@ -1,20 +1,49 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
-  compatibilityDate: '2025-07-01',
-  devtools: { enabled: true },
-  css: ['~/assets/css/main.css'],
-  app: {
-    head: {
-      title: 'lunatix · dashboard',
-      meta: [
-        { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-        { name: 'description', content: 'lunatix server dashboard' },
-      ],
-    },
+  modules: [
+    '@nuxt/eslint',
+    '@nuxt/ui',
+    'nuxt-csurf'
+  ],
+
+  devtools: {
+    enabled: true
   },
+
+  css: ['~/assets/css/main.css'],
+
+  ui: {
+    experimental: {
+      componentDetection: true
+    }
+  },
+
   runtimeConfig: {
     public: {
-      siteUrl: process.env.SITE_URL || 'http://localhost:3000',
-    },
+      siteUrl: process.env.SITE_URL || 'http://localhost:3000'
+    }
   },
+
+  compatibilityDate: '2026-06-30',
+
+  vite: {
+    ssr: {
+      noExternal: ['vim-prosemirror']
+    },
+    optimizeDeps: {
+      include: [
+        '@nuxt/ui > prosemirror-state',
+        'yjs'
+      ]
+    }
+  },
+
+  eslint: {
+    config: {
+      stylistic: {
+        commaDangle: 'never',
+        braceStyle: '1tbs'
+      }
+    }
+  }
 })
