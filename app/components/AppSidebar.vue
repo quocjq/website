@@ -12,7 +12,7 @@ const creating = ref(false)
 
 const apps = [{
   label: 'Forgejo',
-  href: 'https://lunixose.duckdns.org/forgejo/',
+  href: 'https://git.lunixose.duckdns.org/',
   icon: 'i-lucide-git-branch'
 }, {
   label: 'Pi-hole',
