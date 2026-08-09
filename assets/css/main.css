@@ -1,0 +1,18 @@
+:root {
+  --bg: #0f1115;
+  --card: #171a21;
+  --line: #262b36;
+  --fg: #e6e9ef;
+  --mut: #8b93a3;
+  --acc: #7aa2f7;
+  --ok: #7ee787;
+  --bad: #ff7b72;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font: 16px/1.5 system-ui, sans-serif;
+  min-height: 100vh;
+}
