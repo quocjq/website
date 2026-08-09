@@ -88,10 +88,12 @@ async function submitLogin() {
     :class="collapsed ? 'w-12' : 'w-60'"
   >
     <div class="flex h-12 shrink-0 items-center justify-between gap-1 px-2">
-      <AppLogo
+      <span
         v-if="!collapsed"
-        class="h-4 w-auto"
-      />
+        class="flex items-center gap-1 px-1 font-semibold tracking-tight"
+      >
+        lunatix <span class="text-(--ui-primary)">docs</span>
+      </span>
       <UButton
         :icon="collapsed ? 'i-lucide-panel-left-open' : 'i-lucide-panel-left-close'"
         color="neutral"

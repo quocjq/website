@@ -7,11 +7,12 @@
     }"
   >
     <template #left>
-      <NuxtLink to="/">
-        <AppLogo class="w-auto h-6 shrink-0" />
+      <NuxtLink
+        to="/"
+        class="flex items-center gap-2 font-semibold tracking-tight"
+      >
+        lunatix <span class="text-(--ui-primary)">docs</span>
       </NuxtLink>
-
-      <TemplateMenu />
     </template>
 
     <template #right>
@@ -27,15 +28,6 @@
         class="flex items-center gap-0.5"
       >
         <UColorModeButton size="sm" />
-
-        <UButton
-          icon="i-simple-icons-github"
-          color="neutral"
-          variant="ghost"
-          size="sm"
-          to="https://github.com/nuxt-ui-templates/editor"
-          target="_blank"
-        />
       </div>
     </template>
   </UHeader>
