@@ -1,9 +1,18 @@
 import { createHmac, timingSafeEqual } from 'node:crypto'
+import { readFileSync } from 'node:fs'
 import { getCookie, setCookie, deleteCookie, type H3Event } from 'h3'
 
 export const AUTH_COOKIE = 'lunatix-auth'
 
-export function adminPassword() {
+export function adminPassword(): string {
+  const file = process.env.ADMIN_PASSWORD_FILE
+  if (file) {
+    try {
+      return readFileSync(file, 'utf8').trim()
+    } catch {
+      // fall through to env / default
+    }
+  }
   return process.env.ADMIN_PASSWORD || 'changeme'
 }
 
