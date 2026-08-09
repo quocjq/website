@@ -101,7 +101,7 @@ To deploy changes:
   ~website-admin-password~) → can create/delete docs.
 - Vim mode: toggle in the header; status shows -- NORMAL -- / -- INSERT --.
 - Sidebar apps:
-  - Forgejo: https://lunixose.duckdns.org/forgejo/
+  - Forgejo: https://git.lunixose.duckdns.org/
   - Pi-hole: https://dns.lunixose.duckdns.org/
   - Email / Syncthing: placeholders (backends TBD)
 
