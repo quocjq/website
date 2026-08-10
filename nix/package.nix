@@ -18,7 +18,7 @@ buildNpmPackage {
   inherit src;
   nodejs = nodejs;
 
-  npmDepsHash = "sha256-sCIXjp66ISRLBoEuuI99Q1dsFpKirg9X9izWzw20ZX8=";
+  npmDepsHash = "sha256-p3FSK4C1lFsKsVr2lO3yJEaXVkadlWGvVJ9pKkmSQIY=";
 
   # Nuxt's build fails under a non-TTY (consola/colors), so we run it ourselves.
   dontNpmBuild = true;

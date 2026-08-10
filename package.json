@@ -18,6 +18,7 @@
   "dependencies": {
     "@iconify-json/lucide": "^1.2.121",
     "@iconify-json/simple-icons": "^1.2.92",
+    "@nuxt/eslint": "^1.17.0",
     "@nuxt/ui": "^4.10.0",
     "@tiptap/core": "^3.29.0",
     "@tiptap/extension-collaboration": "^3.29.0",
@@ -34,8 +35,10 @@
     "shiki": "^4.4.1",
     "tailwindcss": "^4.3.3",
     "tiptap-extension-code-block-shiki": "^1.2.0",
+    "uniorg-parse": "^3.2.2",
+    "uniorg-rehype": "^2.2.0",
+    "uniorg-stringify": "^1.4.0",
     "vim-prosemirror": "^0.2.0",
-    "yjs": "^13.6.31",
-    "@nuxt/eslint": "^1.17.0"
+    "yjs": "^13.6.31"
   }
 }
