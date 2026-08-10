@@ -1,28 +1,22 @@
 import type { App } from 'h3'
 import { createRouter, defineEventHandler } from 'h3'
-
-type ServiceStatus = {
-  status: 'ok' | 'error' | 'unknown'
-  message: string
-}
+import { forgejoStatus, syncthingStatus, mailStatus } from './services'
+import type { ServiceStatus } from './services'
 
 export function defineStatusRoutes(app: App) {
   const router = createRouter()
 
   router.get(
     '/api/services/:name',
-    defineEventHandler((event): ServiceStatus => {
+    defineEventHandler(async (event): Promise<ServiceStatus> => {
       const name = event.context.params?.name ?? ''
       switch (name) {
         case 'forgejo':
-          return { status: 'unknown', message: 'Forgejo widget not wired yet' }
+          return forgejoStatus()
         case 'syncthing':
-          return { status: 'unknown', message: 'Syncthing widget not wired yet' }
+          return syncthingStatus()
         case 'mail':
-          return {
-            status: 'error',
-            message: 'No mail server configured',
-          }
+          return mailStatus()
         default:
           return { status: 'error', message: `Unknown service: ${name}` }
       }
