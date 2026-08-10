@@ -18,7 +18,7 @@ buildNpmPackage {
   inherit src;
   nodejs = nodejs;
 
-  npmDepsHash = "sha256-rYKtQg+lEPnmdzq3Zf4EA8aB+ulrYpU48ZPVRhWhyg4=";
+  npmDepsHash = lib.fakeHash;;
 
   # npm ci honors NODE_ENV=production and would skip the devDeps (vite,
   # @vitejs/plugin-vue) the build needs; keep it out of the derivation env and
