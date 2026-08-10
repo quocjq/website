@@ -5,10 +5,16 @@ import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 export function registerStaticRoutes(app: App) {
-  // Default: dist/ sits next to the built server bundle (index.mjs → ../dist).
-  // In the Nix install that's <out>/share/lunatix-website/dist.
   const bundleDir = dirname(fileURLToPath(import.meta.url))
-  const dist = resolve(process.env.PUBLIC_DIR ?? resolve(bundleDir, '..', 'dist'))
+  // Layouts differ: local dev has dist/ next to dist-server/; the Nix install
+  // has dist/ as a sibling of index.mjs. Probe both.
+  const candidates = [
+    process.env.PUBLIC_DIR,
+    resolve(bundleDir, '..', 'dist'), // local: dist-server/../dist
+    resolve(bundleDir, 'dist'), // nix: <out>/share/lunatix-website/dist
+  ]
+  const dist =
+    candidates.find((c) => c && existsSync(resolve(c))) ?? resolve(bundleDir, '..', 'dist')
 
   const isAssetPath = (pathname: string) =>
     !pathname.startsWith('/api/') &&
