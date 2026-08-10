@@ -1,7 +1,18 @@
 import { unified } from 'unified'
 import parse from 'uniorg-parse'
+import rehype from 'uniorg-rehype'
+import htmlStringify from 'rehype-stringify'
 import { uniorgStringify } from 'uniorg-stringify'
-import type { OrastRoot, OrastNode } from 'uniorg'
+import type { OrgData, OrgNode } from 'uniorg'
+
+export function orgToHtml(org: string): Promise<string> {
+  return unified()
+    .use(parse)
+    .use((rehype as any).default ?? rehype)
+    .use(htmlStringify)
+    .process(org)
+    .then((f) => f.toString())
+}
 
 export interface NoteHeader {
   title: string
@@ -21,7 +32,7 @@ const EMPTY_HEADER: NoteHeader = {
   rawKeywords: []
 }
 
-function textOf(node: OrastNode | undefined): string {
+function textOf(node: OrgNode | undefined): string {
   if (!node) return ''
   if ('value' in node && typeof node.value === 'string') return node.value
   if ('children' in node && Array.isArray(node.children)) {
@@ -30,7 +41,7 @@ function textOf(node: OrastNode | undefined): string {
   return ''
 }
 
-export function parseHeader(ast: OrastRoot): NoteHeader {
+export function parseHeader(ast: OrgData): NoteHeader {
   const header = { ...EMPTY_HEADER }
   header.rawKeywords = ast.children
     .filter((n: any): n is any => n.type === 'keyword')
@@ -49,7 +60,7 @@ export function parseHeader(ast: OrastRoot): NoteHeader {
   return header
 }
 
-function toMarks(node: OrastNode): Array<{ type: string, attrs?: Record<string, unknown> }> {
+function toMarks(node: OrgNode): Array<{ type: string, attrs?: Record<string, unknown> }> {
   const marks: Array<{ type: string, attrs?: Record<string, unknown> }> = []
   const t = node.type
   if (t === 'bold') marks.push({ type: 'bold' })
@@ -60,7 +71,7 @@ function toMarks(node: OrastNode): Array<{ type: string, attrs?: Record<string, 
   return marks
 }
 
-function inlineChildren(children: OrastNode[]): any[] {
+function inlineChildren(children: OrgNode[]): any[] {
   const out: any[] = []
   for (const child of children) {
     if (child.type === 'text') {
@@ -99,13 +110,13 @@ function inlineChildren(children: OrastNode[]): any[] {
   return out
 }
 
-function blockFromParagraph(children: OrastNode[]): any[] {
+function blockFromParagraph(children: OrgNode[]): any[] {
   const inline = inlineChildren(children)
   if (inline.length === 0) return [{ type: 'paragraph' }]
   return [{ type: 'paragraph', content: inline }]
 }
 
-function toJsonBlock(node: OrastNode): any[] {
+function toJsonBlock(node: OrgNode): any[] {
   switch (node.type) {
     case 'headline': {
       const level = Math.min(6, Math.max(1, (node as any).level ?? 1))
@@ -155,7 +166,7 @@ function toJsonBlock(node: OrastNode): any[] {
       }]
     case 'example-block':
       return [{ type: 'codeBlock', content: [{ type: 'text', text: (node as any).value ?? '' }] }]
-    case 'blockquote': {
+    case 'quote-block': {
       const inner = ((node as any).children ?? []).flatMap(toJsonBlock)
       return [{ type: 'blockquote', content: inner.length ? inner : [{ type: 'paragraph' }] }]
     }
@@ -172,7 +183,6 @@ function toJsonBlock(node: OrastNode): any[] {
       return ((node as any).children ?? []).flatMap(toJsonBlock)
     }
     case 'keyword':
-    case 'meta':
       return []
     default: {
       // passthrough: unparsed constructs render as literal text
@@ -184,7 +194,7 @@ function toJsonBlock(node: OrastNode): any[] {
 }
 
 export function orgToJson(org: string): { header: NoteHeader, content: any } {
-  const ast = unified().use(parse).parse(org) as OrastRoot
+  const ast = unified().use(parse).parse(org) as OrgData
   const header = parseHeader(ast)
   const content = toJsonBlock(ast)
   return { header, content }

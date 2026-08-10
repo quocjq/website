@@ -175,6 +175,26 @@ export async function createNote(body: { title?: string, folder?: string }) {
   return { id: identifier, filename: name, folder }
 }
 
+export async function listPublicNotes(): Promise<NoteMeta[]> {
+  const all = await listNotes()
+  return all.filter((n) => n.public)
+}
+
+export async function readPublicNote(id: string): Promise<{ meta: NoteMeta, html: string } | null> {
+  try {
+    const { fullPath } = await findNote(id)
+    const raw = await readFile(fullPath, 'utf-8')
+    const { header } = orgToJson(raw)
+    if (!header.public) return null
+    const dir = getNotesDir()
+    const meta = await readNoteMeta(fullPath, dir)
+    const html = await orgToHtml(raw)
+    return { meta: meta!, html }
+  } catch {
+    return null
+  }
+}
+
 export async function removeNote(id: string) {
   const { fullPath } = await findNote(id)
   await unlink(fullPath)
