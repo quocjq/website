@@ -36,13 +36,15 @@ export function registerStaticRoutes(app: App) {
       const served = await serveStatic(event, {
         fallthrough: true,
         getMeta: (id) => {
-          const file = resolve(dist, id)
+          // id is an absolute path like "/assets/foo.js"; resolve() would treat
+          // it as root-absolute and ignore dist. Strip the leading slash.
+          const file = resolve(dist, id.replace(/^\/+/, ''))
           if (!existsSync(file)) return undefined
           const stat = statSync(file)
           return { type: 'file', size: stat.size, mtime: stat.mtimeMs }
         },
         getContents: (id) => {
-          const file = resolve(dist, id)
+          const file = resolve(dist, id.replace(/^\/+/, ''))
           if (!existsSync(file)) return undefined
           return readFileSync(file)
         },
