@@ -1,6 +1,22 @@
+import { readFileSync } from 'node:fs'
+
 export interface ServiceStatus {
   status: 'ok' | 'error' | 'unknown'
   message: string
+}
+
+function readSyncthingKey(): string | null {
+  const direct = process.env.SYNCTHING_API_KEY
+  if (direct) return direct
+  const file = process.env.SYNCTHING_API_KEY_FILE
+  if (file) {
+    try {
+      return readFileSync(file, 'utf-8').trim()
+    } catch {
+      return null
+    }
+  }
+  return null
 }
 
 async function fetchJson(url: string, headers: Record<string, string> = {}): Promise<unknown> {
@@ -33,9 +49,9 @@ export async function forgejoStatus(): Promise<ServiceStatus> {
 const SYNCTHING_BASE = process.env.SYNCTHING_BASE ?? 'http://127.0.0.1:8384'
 
 export async function syncthingStatus(): Promise<ServiceStatus> {
-  const key = process.env.SYNCTHING_API_KEY
+  const key = readSyncthingKey()
   if (!key) {
-    return { status: 'error', message: 'SYNCTHING_API_KEY not set' }
+    return { status: 'error', message: 'Syncthing API key unavailable' }
   }
   try {
     const headers = { 'X-API-Key': key }
