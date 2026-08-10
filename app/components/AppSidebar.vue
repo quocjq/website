@@ -28,12 +28,32 @@ const apps = [{
   icon: 'i-lucide-refresh-cw'
 }]
 
-onMounted(() => {
-  collapsed.value = localStorage.getItem('lunatix-sidebar-collapsed') === 'true'
-})
-
 watch(collapsed, (value) => {
   localStorage.setItem('lunatix-sidebar-collapsed', String(value))
+})
+
+const passwordInput = ref<HTMLInputElement | null>(null)
+
+watch(loginOpen, (open) => {
+  if (open) {
+    loginError.value = ''
+    nextTick(() => passwordInput.value?.focus())
+  }
+})
+
+function onKeydown(e: KeyboardEvent) {
+  if (e.key === 'Escape' && loginOpen.value) {
+    loginOpen.value = false
+  }
+}
+
+onMounted(() => {
+  collapsed.value = localStorage.getItem('lunatix-sidebar-collapsed') === 'true'
+  window.addEventListener('keydown', onKeydown)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onKeydown)
 })
 
 async function openDoc(id: string) {
@@ -188,6 +208,7 @@ async function submitLogin() {
         v-if="!authed"
         icon="i-lucide-log-in"
         :label="collapsed ? undefined : 'Login'"
+        :aria-label="'Login'"
         color="neutral"
         variant="ghost"
         size="sm"
@@ -213,53 +234,52 @@ async function submitLogin() {
       </template>
     </div>
 
-    <UModal
-      v-model:open="loginOpen"
-      :ui="{ content: 'sm:max-w-xs' }"
-    >
-      <div class="flex flex-col gap-4 p-4">
-        <div class="text-center">
-          <UAvatar
-            icon="i-lucide-key-round"
-            size="lg"
-            class="mx-auto mb-2"
-          />
-          <h3 class="font-semibold">
-            Sign in
-          </h3>
-          <p class="text-sm text-(--ui-text-muted)">
-            Enter the admin password to manage documents.
-          </p>
-        </div>
+    <Teleport to="body">
+      <div
+        v-if="loginOpen"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+        @click.self="loginOpen = false"
+      >
+        <div class="w-[320px] rounded-xl border border-(--ui-border) bg-(--ui-bg) p-5 shadow-xl">
+          <div class="mb-4 text-center">
+            <h3 class="text-lg font-semibold">
+              Sign in
+            </h3>
+            <p class="mt-1 text-sm text-(--ui-text-muted)">
+              Enter the admin password to manage documents.
+            </p>
+          </div>
 
-        <form
-          class="flex flex-col gap-3"
-          @submit.prevent="submitLogin"
-        >
-          <UInput
-            v-model="password"
-            type="password"
-            name="password"
-            placeholder="Password"
-            autofocus
-            autocomplete="current-password"
-            :trailing-icon="'i-lucide-lock'"
-          />
-          <p
-            v-if="loginError"
-            class="text-sm text-(--ui-error)"
+          <form
+            class="flex flex-col gap-3"
+            @submit.prevent="submitLogin"
           >
-            {{ loginError }}
-          </p>
-          <UButton
-            type="submit"
-            block
-            :loading="loginLoading"
-          >
-            Sign in
-          </UButton>
-        </form>
+            <input
+              ref="passwordInput"
+              v-model="password"
+              type="password"
+              name="password"
+              placeholder="Password"
+              autocomplete="current-password"
+              class="w-full rounded-md border border-(--ui-border) bg-(--ui-bg-elevated) px-3 py-2 text-sm outline-none focus:border-(--ui-primary)"
+              :disabled="loginLoading"
+            />
+            <p
+              v-if="loginError"
+              class="text-sm text-(--ui-error)"
+            >
+              {{ loginError }}
+            </p>
+            <button
+              type="submit"
+              class="w-full rounded-md bg-(--ui-primary) px-3 py-2 text-sm font-medium text-white transition-opacity disabled:opacity-60"
+              :disabled="loginLoading"
+            >
+              {{ loginLoading ? 'Signing in…' : 'Sign in' }}
+            </button>
+          </form>
+        </div>
       </div>
-    </UModal>
+    </Teleport>
   </aside>
 </template>
