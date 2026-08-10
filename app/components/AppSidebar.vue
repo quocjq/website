@@ -1,30 +1,35 @@
 <script setup lang="ts">
 const { authed, login, logout } = useAuth()
-const { docs, refresh, create, remove } = useDocs()
-const currentDocId = useState<string | null>('lunatix-current-doc', () => null)
+const { notes, refresh } = useNotes()
+const currentNoteId = useState<string | null>('lunatix-current-note', () => null)
 
 const collapsed = ref(false)
 const loginOpen = ref(false)
 const password = ref('')
 const loginError = ref('')
 const loginLoading = ref(false)
-const creating = ref(false)
 const passwordInput = ref<HTMLInputElement | null>(null)
 
 const apps = [
   { label: 'Forgejo', href: 'https://git.lunixose.duckdns.org/', icon: 'git-branch' },
   { label: 'Pi-hole', href: 'https://dns.lunixose.duckdns.org/', icon: 'shield' },
   { label: 'Email', href: 'https://lunixose.duckdns.org/email/', icon: 'mail' },
-  { label: 'Syncthing', href: 'https://lunixose.duckdns.org/syncthing/', icon: 'refresh' },
-  { label: 'Notes', href: '/notes', icon: 'file-text' }
+  { label: 'Syncthing', href: 'https://lunixose.duckdns.org/syncthing/', icon: 'refresh' }
 ]
 
-onMounted(() => {
+const folders = computed(() => Array.from(new Set(notes.value.map((n) => n.folder).filter(Boolean))))
+
+onMounted(async () => {
   collapsed.value = localStorage.getItem('lunatix-sidebar-collapsed') === 'true'
+  await refresh()
 })
 
 watch(collapsed, (value) => {
   localStorage.setItem('lunatix-sidebar-collapsed', String(value))
+})
+
+watch(authed, async (authedNow) => {
+  if (authedNow) await refresh()
 })
 
 watch(loginOpen, (open) => {
@@ -45,30 +50,9 @@ function openApp(app: { href: string }) {
 onMounted(() => window.addEventListener('keydown', onKeydown))
 onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
 
-async function openDoc(id: string) {
-  if (currentDocId.value === id) return
-  currentDocId.value = id
-}
-
-async function newDoc() {
-  if (!authed.value || creating.value) return
-  creating.value = true
-  try {
-    const doc = await create()
-    await refresh()
-    currentDocId.value = doc.id
-  } finally {
-    creating.value = false
-  }
-}
-
-async function deleteDoc(id: string) {
-  if (!authed.value) return
-  await remove(id)
-  await refresh()
-  if (currentDocId.value === id) {
-    currentDocId.value = docs.value[0]?.id || null
-  }
+function openNote(id: string) {
+  if (currentNoteId.value !== id) currentNoteId.value = id
+  navigateTo('/notes')
 }
 
 async function submitLogin() {
@@ -122,43 +106,27 @@ async function submitLogin() {
       </nav>
 
       <div class="flex min-h-0 flex-1 flex-col">
-        <div class="flex items-center justify-between px-2 pb-1.5">
-          <p class="text-[11px] font-semibold uppercase tracking-wider text-(--fg-muted)">Documents</p>
-          <AppButton
-            v-if="authed"
-            icon="plus"
-            size="xs"
-            variant="ghost"
-            :loading="creating"
-            :aria-label="'New document'"
-            @click="newDoc"
-          />
-        </div>
+        <p class="px-2 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-(--fg-muted)">Notes</p>
 
-        <p v-if="!authed" class="mb-2 px-2 text-xs text-(--fg-muted)">Read-only shared documents.</p>
+        <p v-if="!authed" class="mb-2 px-2 text-xs text-(--fg-muted)">Login to view notes</p>
 
-        <ul class="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto">
-          <li v-for="doc in docs" :key="doc.id" class="group flex items-center">
+        <div v-if="authed" class="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto">
+          <div v-for="folder in ['', ...folders]" :key="folder">
+            <p v-if="folder" class="px-2 pt-2 text-[11px] text-(--fg-muted)">{{ folder }}</p>
             <AppButton
+              v-for="note in notes.filter(n => n.folder === folder)"
+              :key="note.id"
               variant="ghost"
               :icon="'file-text'"
-              class="flex-1 justify-start min-w-0"
-              :active="currentDocId === doc.id"
-              @click="openDoc(doc.id)"
+              class="w-full justify-start min-w-0"
+              :active="currentNoteId === note.id"
+              @click="openNote(note.id)"
             >
-              <span class="truncate">{{ doc.title || 'Untitled' }}</span>
+              <span class="truncate">{{ note.title }}</span>
+              <span v-if="note.public" class="ml-auto text-[10px] text-(--fg-muted)">public</span>
             </AppButton>
-            <AppButton
-              v-if="authed"
-              icon="trash"
-              variant="ghost"
-              size="xs"
-              class="mr-1 hidden group-hover:flex"
-              :aria-label="`Delete ${doc.title || 'Untitled'}`"
-              @click="deleteDoc(doc.id)"
-            />
-          </li>
-        </ul>
+          </div>
+        </div>
       </div>
     </div>
 

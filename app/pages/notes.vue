@@ -53,36 +53,12 @@ onMounted(async () => {
     await loadPublic()
   }
 })
-
-const folders = computed(() => Array.from(new Set(notes.value.map((n) => n.folder).filter(Boolean))))
 </script>
 
 <template>
   <div class="flex flex-1 min-w-0">
     <!-- private reader (note.*) -->
     <template v-if="isNoteHost">
-      <div class="w-56 shrink-0 border-r border-(--border) overflow-y-auto p-3 space-y-2">
-        <span class="px-1 text-xs font-semibold text-(--fg-muted) uppercase">Notes</span>
-
-        <div v-if="authed" class="space-y-0.5">
-          <div v-for="folder in ['', ...folders]" :key="folder" class="space-y-0.5">
-            <p v-if="folder" class="px-2 pt-2 text-[11px] text-(--fg-muted)">{{ folder }}</p>
-            <AppButton
-              v-for="n in notes.filter(n => n.folder === folder)"
-              :key="n.id"
-              variant="ghost"
-              class="w-full justify-start px-2"
-              :active="currentNoteId === n.id"
-              @click="currentNoteId = n.id"
-            >
-              <span class="truncate">{{ n.title }}</span>
-              <span v-if="n.public" class="ml-auto text-[10px] text-(--fg-muted)">public</span>
-            </AppButton>
-          </div>
-        </div>
-        <p v-else class="px-2 text-xs text-(--fg-muted)">Login to view notes</p>
-      </div>
-
       <div class="flex flex-1 flex-col min-w-0">
         <AppHeader>
           <template #brand>
