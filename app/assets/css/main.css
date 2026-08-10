@@ -19,6 +19,25 @@ html.dark .tiptap .shiki span {
   background-color: var(--ui-bg-muted) !important;
 }
 
+/* Public note body (from org->html) */
+.note-body {
+  line-height: 1.7;
+}
+.note-body h1, .note-body h2, .note-body h3, .note-body h4 {
+  font-weight: 700;
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+}
+.note-body p { margin: 0.75em 0; }
+.note-body ul, .note-body ol { padding-left: 1.4em; margin: 0.75em 0; }
+.note-body li { margin: 0.25em 0; }
+.note-body table { border-collapse: collapse; margin: 1em 0; }
+.note-body th, .note-body td { border: 1px solid var(--ui-border); padding: 0.4em 0.7em; }
+.note-body code { background: var(--ui-bg-elevated); padding: 0.1em 0.3em; border-radius: 4px; font-size: 0.9em; }
+.note-body pre { background: var(--ui-bg-elevated); padding: 1em; border-radius: 8px; overflow-x: auto; }
+.note-body a { color: var(--ui-primary); text-decoration: underline; }
+.note-body blockquote { border-left: 3px solid var(--ui-border); padding-left: 1em; color: var(--ui-text-muted); margin: 1em 0; }
+
 /* Collaboration carets */
 .collaboration-carets__caret {
   border-left: 1px solid #0d0d0d;

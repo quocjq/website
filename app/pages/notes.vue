@@ -12,6 +12,36 @@ const { authed, check } = useAuth()
 const { notes, refresh, get, save, create, remove } = useNotes()
 const currentNoteId = useState<string | null>('lunatix-current-note', () => null)
 
+// host-based mode: note.* = private editor, lunixose.* = public blog
+const isNoteHost = computed(() => {
+  if (import.meta.server) {
+    const host = useRequestHeaders(['host']).host ?? ''
+    return host.startsWith('note.')
+  }
+  return window.location.hostname.startsWith('note.')
+})
+
+const publicNotes = ref<NoteMeta[]>([])
+
+async function loadPublic() {
+  const { $csrfFetch } = useNuxtApp()
+  const fetcher: any = $csrfFetch || $fetch
+  publicNotes.value = await fetcher('/api/public') as NoteMeta[]
+}
+
+onMounted(async () => {
+  if (isNoteHost.value) {
+    await Promise.all([check(), refresh()])
+    if (authed.value) {
+      const target = notes.value[0]?.id ?? null
+      currentNoteId.value = target
+    }
+  } else {
+    await loadPublic()
+  }
+})
+
+onBeforeUnmount(() => flushSave())
 const content = ref<Record<string, any>>({ type: 'doc', content: [{ type: 'paragraph' }] })
 const noteTitle = ref('')
 const noteTags = ref<string[]>([])
@@ -108,16 +138,6 @@ function openNote(id: string) {
 
 watch(currentNoteId, (id) => { if (id) loadNote(id) })
 
-onMounted(async () => {
-  await Promise.all([check(), refresh()])
-  if (authed.value) {
-    const target = notes.value[0]?.id ?? null
-    currentNoteId.value = target
-  }
-})
-
-onBeforeUnmount(() => flushSave())
-
 async function newNote() {
   if (!authed.value || creating.value) return
   creating.value = true
@@ -148,7 +168,8 @@ function toggleVim() {
 
 <template>
   <div class="flex flex-1 min-w-0">
-    <!-- notes sidebar -->
+    <template v-if="isNoteHost">
+      <!-- notes sidebar -->
     <div class="w-56 shrink-0 border-r border-(--ui-border) overflow-y-auto p-3 space-y-2">
       <div class="flex items-center justify-between px-1">
         <span class="text-xs font-semibold text-(--ui-text-muted) uppercase">Notes</span>
@@ -261,6 +282,31 @@ function toggleVim() {
 
       <div v-else class="flex-1 flex items-center justify-center text-(--ui-text-muted)">
         {{ authed ? 'Select or create a note' : 'Login required to view notes' }}
+      </div>
+    </div>
+    </template>
+
+    <!-- public blog (lunixose.*/notes) -->
+    <div v-else class="flex-1 overflow-y-auto">
+      <div class="max-w-3xl mx-auto px-6 py-12">
+        <h1 class="text-3xl font-bold mb-8">Notes</h1>
+        <div v-if="publicNotes.length" class="space-y-4">
+          <NuxtLink
+            v-for="note in publicNotes"
+            :key="note.id"
+            :to="`/notes/${note.id}`"
+            class="block group"
+          >
+            <article class="rounded-lg border border-(--ui-border) p-5 hover:border-(--ui-primary) transition">
+              <h2 class="text-xl font-semibold group-hover:text-(--ui-primary)">{{ note.title }}</h2>
+              <p v-if="note.date" class="text-sm text-(--ui-text-muted) mt-1">{{ note.date }}</p>
+              <div v-if="note.tags.length" class="flex gap-1.5 mt-3">
+                <span v-for="t in note.tags" :key="t" class="text-xs bg-(--ui-bg-elevated) px-1.5 py-0.5 rounded">{{ t }}</span>
+              </div>
+            </article>
+          </NuxtLink>
+        </div>
+        <p v-else class="text-(--ui-text-muted)">No public notes yet.</p>
       </div>
     </div>
   </div>
