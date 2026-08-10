@@ -1,7 +1,7 @@
 import { readdir, readFile, writeFile, rename, unlink, mkdir, stat } from 'node:fs/promises'
 import { join, relative, dirname, basename } from 'node:path'
 import { createError } from 'h3'
-import { orgToJson, jsonToOrg, hashNote } from './org'
+import { extractHeader, orgToHtml } from './org'
 
 export interface NoteMeta {
   id: string
@@ -67,7 +67,7 @@ export async function listNotes(): Promise<NoteMeta[]> {
 async function readNoteMeta(fullPath: string, dir: string): Promise<NoteMeta | null> {
   const name = parseDenoteName(basename(fullPath))
   const raw = await readFile(fullPath, 'utf-8')
-  const { header } = orgToJson(raw)
+  const header = extractHeader(raw)
   const st = await stat(fullPath)
   return {
     id: name?.identifier ?? (header.identifier || fallbackId(basename(fullPath))),
@@ -106,7 +106,7 @@ export async function findNote(id: string): Promise<{ fullPath: string, dir: str
 export async function readNote(id: string) {
   const { fullPath } = await findNote(id)
   const raw = await readFile(fullPath, 'utf-8')
-  const { header } = orgToJson(raw)
+  const header = extractHeader(raw)
   const dir = getNotesDir()
   const meta = await readNoteMeta(fullPath, dir)
   const html = await orgToHtml(raw)
@@ -128,39 +128,23 @@ function slugify(title: string): string {
   return title.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80) || 'untitled'
 }
 
-export async function saveNote(id: string, body: { content?: Record<string, any>, sourceHash?: string, title?: string }) {
-  if (!body?.content || typeof body.content !== 'object') {
-    throw createError({ statusCode: 400, statusMessage: 'content is required' })
+export async function saveNote(id: string, body: { org?: string, title?: string }) {
+  const org = typeof body?.org === 'string' ? body.org : null
+  if (org === null) {
+    throw createError({ statusCode: 400, statusMessage: 'org is required' })
   }
   const { fullPath } = await findNote(id)
-  const raw = await readFile(fullPath, 'utf-8')
-  const { header } = orgToJson(raw)
-
-  const newContent = body.content
+  const header = extractHeader(org)
+  const nextTitle = header.title
   const bodyTitle = typeof body.title === 'string' ? body.title.trim() : ''
-  const titleChanged = !!bodyTitle && bodyTitle !== header.title
-  let nextTitle = header.title
-  if (titleChanged) {
-    nextTitle = bodyTitle
-    header.rawKeywords = header.rawKeywords.map((k) =>
-      k.startsWith('#+TITLE:') || k.startsWith('#+title:') ? `#+title: ${nextTitle}` : k
-    )
-    header.title = nextTitle
-  }
-
-  // zero-edit no-op: if content unchanged, write original bytes verbatim
-  if (!titleChanged && body.sourceHash && body.sourceHash === hashNote({ type: 'doc', content: newContent.content })) {
-    return { rewritten: false, id, meta: { id, title: nextTitle } }
-  }
-
-  const org = jsonToOrg(newContent, header)
+  const titleChanged = !!bodyTitle && bodyTitle !== nextTitle
   const tmp = `${fullPath}.${process.pid}.tmp`
   await writeFile(tmp, org, 'utf-8')
   await rename(tmp, fullPath)
-  if (titleChanged) {
-    await renameNoteFile(id, nextTitle)
+  if (titleChanged && bodyTitle) {
+    await renameNoteFile(id, bodyTitle)
   }
-  return { rewritten: true, id, meta: { id, title: nextTitle } }
+  return { rewritten: true, id, meta: { id, title: bodyTitle || nextTitle } }
 }
 
 export async function createNote(body: { title?: string, folder?: string }) {
@@ -187,7 +171,7 @@ export async function readPublicNote(id: string): Promise<{ meta: NoteMeta, html
   try {
     const { fullPath } = await findNote(id)
     const raw = await readFile(fullPath, 'utf-8')
-    const { header } = orgToJson(raw)
+    const header = extractHeader(raw)
     if (!header.public) return null
     const dir = getNotesDir()
     const meta = await readNoteMeta(fullPath, dir)
@@ -207,7 +191,7 @@ export async function renameNoteFile(id: string, newTitle: string) {
   const { fullPath } = await findNote(id)
   const dir = dirname(fullPath)
   const raw = await readFile(fullPath, 'utf-8')
-  const { header } = orgToJson(raw)
+  const header = extractHeader(raw)
   const identifier = header.identifier || id
   const tags = header.filetags ? header.filetags.replace(/^:|:$/g, '') : ''
   const name = `${identifier}--${slugify(newTitle)}${tags ? `__${tags}` : ''}.org`
