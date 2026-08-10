@@ -1,16 +1,18 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
 import AppSidebar from './components/AppSidebar.vue'
 import AppRightBar from './components/AppRightBar.vue'
 import { useAuth } from './composables/useAuth'
 import { useNotes } from './composables/useNotes'
 import { currentNote, currentNoteId, notes } from './composables/store'
-import { isNoteHost } from './lib/host'
 
 const { check } = useAuth()
 const { selectNote } = useNotes()
 check()
 
-const noteHost = isNoteHost()
+const route = useRoute()
+const showRightBar = computed(() => route.name === 'reader')
 </script>
 
 <template>
@@ -20,7 +22,7 @@ const noteHost = isNoteHost()
       <RouterView />
     </div>
     <AppRightBar
-      v-if="noteHost"
+      v-if="showRightBar"
       :note="currentNote"
       :notes="notes"
       :current-note-id="currentNoteId"

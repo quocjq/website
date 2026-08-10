@@ -4,20 +4,20 @@ import App from './App.vue'
 import './assets/css/main.css'
 
 const NotesView = () => import('./views/NotesView.vue')
+const BlogView = () => import('./views/BlogView.vue')
 const PublicNoteView = () => import('./views/PublicNoteView.vue')
 
 const router = createRouter({
   history: createWebHistory(),
   routes: [
-    { path: '/', redirect: '/notes' },
-    { path: '/notes', name: 'notes', component: NotesView },
+    { path: '/', name: 'reader', component: NotesView },
+    { path: '/notes', name: 'blog', component: BlogView },
     { path: '/notes/:id', name: 'note', component: PublicNoteView }
   ]
 })
 
 router.afterEach((to) => {
-  const title = to.name === 'note' ? undefined : 'Lunatix'
-  document.title = title || 'Lunatix'
+  document.title = to.name === 'note' ? 'Lunatix' : 'Lunatix'
 })
 
 createApp(App).use(router).mount('#app')
