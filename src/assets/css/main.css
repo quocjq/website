@@ -194,9 +194,19 @@ html, body {
 
 /* --- public note body (blog, org->html) --- */
 .note-body { line-height: 1.7; }
-.note-body h1, .note-body h2, .note-body h3, .note-body h4 { font-weight: 700; margin-top: 1.5em; margin-bottom: 0.5em; }
+.note-body h1, .note-body h2, .note-body h3, .note-body h4, .note-body h5, .note-body h6 { font-weight: 700; margin-top: 1.5em; margin-bottom: 0.5em; line-height: 1.3; }
+.note-body h1 { font-size: 2em; }
+.note-body h2 { font-size: 1.5em; }
+.note-body h3 { font-size: 1.25em; }
+.note-body h4 { font-size: 1.1em; }
+.note-body h5 { font-size: 1em; }
+.note-body h6 { font-size: 0.9em; }
 .note-body p { margin: 0.75em 0; }
 .note-body ul, .note-body ol { padding-left: 1.4em; margin: 0.75em 0; }
+.note-body ul { list-style: disc; }
+.note-body ul ul { list-style: circle; }
+.note-body ul ul ul { list-style: square; }
+.note-body ol { list-style: decimal; }
 .note-body li { margin: 0.25em 0; }
 .note-body table { border-collapse: collapse; margin: 1em 0; }
 .note-body th, .note-body td { border: 1px solid var(--border); padding: 0.4em 0.7em; }
