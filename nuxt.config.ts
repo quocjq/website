@@ -1,8 +1,9 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
+import tailwindcss from '@tailwindcss/vite'
+
 export default defineNuxtConfig({
   modules: [
     '@nuxt/eslint',
-    '@nuxt/ui',
     'nuxt-csurf'
   ],
 
@@ -12,10 +13,8 @@ export default defineNuxtConfig({
 
   css: ['~/assets/css/main.css'],
 
-  ui: {
-    experimental: {
-      componentDetection: true
-    }
+  vite: {
+    plugins: [tailwindcss()]
   },
 
   runtimeConfig: {
@@ -25,18 +24,6 @@ export default defineNuxtConfig({
   },
 
   compatibilityDate: '2026-06-30',
-
-  vite: {
-    ssr: {
-      noExternal: ['vim-prosemirror']
-    },
-    optimizeDeps: {
-      include: [
-        '@nuxt/ui > prosemirror-state',
-        'yjs'
-      ]
-    }
-  },
 
   eslint: {
     config: {

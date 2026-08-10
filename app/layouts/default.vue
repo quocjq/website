@@ -8,7 +8,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="flex h-screen overflow-hidden bg-(--ui-bg)">
+  <div class="flex h-screen overflow-hidden bg-(--bg)">
     <AppSidebar />
     <div class="flex min-w-0 flex-1 flex-col overflow-hidden">
       <NuxtPage />

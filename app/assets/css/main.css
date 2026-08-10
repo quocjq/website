@@ -1,65 +1,207 @@
-@import "tailwindcss" theme(static);
-@import "@nuxt/ui";
+@import "tailwindcss";
+
+/* Color themes: each sets the semantic vars; applied via [data-theme] on <html> */
+
+:root,
+html[data-theme="catppuccin-latte"] {
+  --bg: #eff1f5;
+  --bg-elevated: #e6e9ef;
+  --bg-muted: #e6e9ef;
+  --fg: #4c4f69;
+  --fg-muted: #5c5f77;
+  --border: #ccd0da;
+  --accent: #179299;
+  --accent-fg: #eff1f5;
+  --accent-hover: #1e8a8f;
+  --success: #40a02b;
+  --danger: #d20f39;
+  --selection: #ccd0da;
+  color-scheme: light;
+}
+
+html[data-theme="catppuccin-frappe"] {
+  --bg: #303446;
+  --bg-elevated: #414559;
+  --bg-muted: #292c3c;
+  --fg: #c6d0f5;
+  --fg-muted: #a5adce;
+  --border: #414559;
+  --accent: #81c8be;
+  --accent-fg: #1f2028;
+  --accent-hover: #8caaee;
+  --success: #a6d189;
+  --danger: #e78284;
+  --selection: #51576d;
+  color-scheme: dark;
+}
+
+html[data-theme="catppuccin-macchiato"] {
+  --bg: #24273a;
+  --bg-elevated: #363a4f;
+  --bg-muted: #1e2030;
+  --fg: #cad3f5;
+  --fg-muted: #a5adcb;
+  --border: #363a4f;
+  --accent: #8bd5ca;
+  --accent-fg: #1f2028;
+  --accent-hover: #91d7e3;
+  --success: #a6da95;
+  --danger: #ed8796;
+  --selection: #494d64;
+  color-scheme: dark;
+}
+
+html[data-theme="catppuccin-mocha"] {
+  --bg: #1e1e2e;
+  --bg-elevated: #313244;
+  --bg-muted: #181825;
+  --fg: #cdd6f4;
+  --fg-muted: #a6adc8;
+  --border: #313244;
+  --accent: #94e2d5;
+  --accent-fg: #1f2028;
+  --accent-hover: #89b4fa;
+  --success: #a6e3a1;
+  --danger: #f38ba8;
+  --selection: #45475a;
+  color-scheme: dark;
+}
+
+html[data-theme="gruvbox-light"] {
+  --bg: #fbf1c7;
+  --bg-elevated: #ebdbb2;
+  --bg-muted: #f2e5bc;
+  --fg: #3c3836;
+  --fg-muted: #665c54;
+  --border: #d5c4a1;
+  --accent: #427b58;
+  --accent-fg: #fbf1c7;
+  --accent-hover: #8f3f71;
+  --success: #79740e;
+  --danger: #9d0006;
+  --selection: #d5c4a1;
+  color-scheme: light;
+}
+
+html[data-theme="gruvbox-dark"] {
+  --bg: #282828;
+  --bg-elevated: #3c3836;
+  --bg-muted: #1d2021;
+  --fg: #ebdbb2;
+  --fg-muted: #a89984;
+  --border: #3c3836;
+  --accent: #8ec07c;
+  --accent-fg: #282828;
+  --accent-hover: #fe8019;
+  --success: #b8bb26;
+  --danger: #fb4934;
+  --selection: #504945;
+  color-scheme: dark;
+}
+
+html[data-theme="evergreen-light"] {
+  --bg: #f4f7f4;
+  --bg-elevated: #e7ede7;
+  --bg-muted: #edf2ed;
+  --fg: #20301f;
+  --fg-muted: #5d7163;
+  --border: #d3ded3;
+  --accent: #3b8f5e;
+  --accent-fg: #f4f7f4;
+  --accent-hover: #2f7a4d;
+  --success: #3b8f5e;
+  --danger: #b4433a;
+  --selection: #d3ded3;
+  color-scheme: light;
+}
+
+html[data-theme="evergreen-dark"] {
+  --bg: #0f1a12;
+  --bg-elevated: #1b2d21;
+  --bg-muted: #0c1410;
+  --fg: #dceadf;
+  --fg-muted: #8fb09a;
+  --border: #263d2d;
+  --accent: #6bc98e;
+  --accent-fg: #0f1a12;
+  --accent-hover: #88dda6;
+  --success: #6bc98e;
+  --danger: #d0655c;
+  --selection: #263d2d;
+  color-scheme: dark;
+}
+
+/* legacy `.dark` alias → catppuccin-mocha */
+html.dark[data-theme=""] { }
 
 @theme {
-  --font-sans: 'Public Sans', sans-serif;
+  --font-sans: 'Public Sans', system-ui, sans-serif;
 }
 
-:root {
-  --ui-bg: white;
+html, body {
+  background: var(--bg);
+  color: var(--fg);
 }
 
-.dark {
-  --ui-bg: black;
+::selection {
+  background: var(--selection);
 }
 
-html.dark .tiptap .shiki,
-html.dark .tiptap .shiki span {
-  color: var(--shiki-dark) !important;
-  background-color: var(--ui-bg-muted) !important;
-}
-
-/* Public note body (from org->html) */
-.note-body {
+/* --- editor content (own block model) --- */
+.app-editor {
   line-height: 1.7;
 }
-.note-body h1, .note-body h2, .note-body h3, .note-body h4 {
-  font-weight: 700;
-  margin-top: 1.5em;
-  margin-bottom: 0.5em;
+.app-editor [contenteditable] {
+  outline: none;
 }
+.app-editor p { margin: 0.4em 0; }
+.app-editor h1 { font-size: 2em; font-weight: 700; margin: 0.6em 0 0.3em; }
+.app-editor h2 { font-size: 1.5em; font-weight: 700; margin: 0.6em 0 0.3em; }
+.app-editor h3 { font-size: 1.25em; font-weight: 600; margin: 0.5em 0 0.25em; }
+.app-editor h4 { font-size: 1.1em; font-weight: 600; margin: 0.5em 0 0.25em; }
+.app-editor code {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  padding: 0.1em 0.3em;
+  border-radius: 4px;
+  font-size: 0.9em;
+  font-family: ui-monospace, monospace;
+}
+.app-editor pre {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  padding: 0.8em 1em;
+  border-radius: 8px;
+  overflow-x: auto;
+}
+.app-editor pre code { border: none; background: none; padding: 0; }
+.app-editor blockquote {
+  border-left: 3px solid var(--border);
+  padding-left: 1em;
+  margin: 0.5em 0;
+  color: var(--fg-muted);
+}
+.app-editor a { color: var(--accent); text-decoration: underline; cursor: pointer; }
+.app-editor ul, .app-editor ol { padding-left: 1.5em; margin: 0.4em 0; }
+.app-editor li { margin: 0.2em 0; }
+.app-editor .task-item { list-style: none; }
+.app-editor table { border-collapse: collapse; margin: 0.6em 0; width: 100%; }
+.app-editor th, .app-editor td {
+  border: 1px solid var(--border);
+  padding: 0.4em 0.6em;
+  min-width: 4em;
+}
+
+/* --- public note body (blog, org->html) --- */
+.note-body { line-height: 1.7; }
+.note-body h1, .note-body h2, .note-body h3, .note-body h4 { font-weight: 700; margin-top: 1.5em; margin-bottom: 0.5em; }
 .note-body p { margin: 0.75em 0; }
 .note-body ul, .note-body ol { padding-left: 1.4em; margin: 0.75em 0; }
 .note-body li { margin: 0.25em 0; }
 .note-body table { border-collapse: collapse; margin: 1em 0; }
-.note-body th, .note-body td { border: 1px solid var(--ui-border); padding: 0.4em 0.7em; }
-.note-body code { background: var(--ui-bg-elevated); padding: 0.1em 0.3em; border-radius: 4px; font-size: 0.9em; }
-.note-body pre { background: var(--ui-bg-elevated); padding: 1em; border-radius: 8px; overflow-x: auto; }
-.note-body a { color: var(--ui-primary); text-decoration: underline; }
-.note-body blockquote { border-left: 3px solid var(--ui-border); padding-left: 1em; color: var(--ui-text-muted); margin: 1em 0; }
+.note-body th, .note-body td { border: 1px solid var(--border); padding: 0.4em 0.7em; }
+.note-body code { background: var(--bg-elevated); padding: 0.1em 0.3em; border-radius: 4px; font-size: 0.9em; }
+.note-body pre { background: var(--bg-elevated); padding: 1em; border-radius: 8px; overflow-x: auto; }
+.note-body a { color: var(--accent); text-decoration: underline; }
+.note-body blockquote { border-left: 3px solid var(--border); padding-left: 1em; color: var(--fg-muted); margin: 1em 0; }
 
-/* Collaboration carets */
-.collaboration-carets__caret {
-  border-left: 1px solid #0d0d0d;
-  border-right: 1px solid #0d0d0d;
-  margin-left: -1px;
-  margin-right: -1px;
-  pointer-events: none;
-  position: relative;
-  word-break: normal;
-}
-
-.collaboration-carets__label {
-  border-radius: 3px 3px 3px 0;
-  color: #0d0d0d;
-  font-size: 12px;
-  font-style: normal;
-  font-weight: 600;
-  left: -1px;
-  line-height: normal;
-  padding: 0.1rem 0.3rem;
-  position: absolute;
-  top: -1.4em;
-  user-select: none;
-  white-space: nowrap;
-}

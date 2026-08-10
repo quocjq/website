@@ -1,7 +1,7 @@
 import { isAuthed } from '../utils/auth'
 import { createError } from 'h3'
 
-const PROTECTED_PREFIXES = ['/api/notes', '/api/docs']
+const PROTECTED_PREFIXES = ['/api/notes']
 
 export default defineEventHandler((event) => {
   const path = event.path || getRequestURL(event).pathname

@@ -9,30 +9,23 @@ const password = ref('')
 const loginError = ref('')
 const loginLoading = ref(false)
 const creating = ref(false)
+const passwordInput = ref<HTMLInputElement | null>(null)
 
-const apps = [{
-  label: 'Forgejo',
-  href: 'https://git.lunixose.duckdns.org/',
-  icon: 'i-lucide-git-branch'
-}, {
-  label: 'Pi-hole',
-  href: 'https://dns.lunixose.duckdns.org/',
-  icon: 'i-lucide-shield'
-}, {
-  label: 'Email',
-  href: 'https://lunixose.duckdns.org/email/',
-  icon: 'i-lucide-mail'
-}, {
-  label: 'Syncthing',
-  href: 'https://lunixose.duckdns.org/syncthing/',
-  icon: 'i-lucide-refresh-cw'
-}]
+const apps = [
+  { label: 'Forgejo', href: 'https://git.lunixose.duckdns.org/', icon: 'git-branch' },
+  { label: 'Pi-hole', href: 'https://dns.lunixose.duckdns.org/', icon: 'shield' },
+  { label: 'Email', href: 'https://lunixose.duckdns.org/email/', icon: 'mail' },
+  { label: 'Syncthing', href: 'https://lunixose.duckdns.org/syncthing/', icon: 'refresh' },
+  { label: 'Notes', href: '/notes', icon: 'file-text' }
+]
+
+onMounted(() => {
+  collapsed.value = localStorage.getItem('lunatix-sidebar-collapsed') === 'true'
+})
 
 watch(collapsed, (value) => {
   localStorage.setItem('lunatix-sidebar-collapsed', String(value))
 })
-
-const passwordInput = ref<HTMLInputElement | null>(null)
 
 watch(loginOpen, (open) => {
   if (open) {
@@ -42,19 +35,15 @@ watch(loginOpen, (open) => {
 })
 
 function onKeydown(e: KeyboardEvent) {
-  if (e.key === 'Escape' && loginOpen.value) {
-    loginOpen.value = false
-  }
+  if (e.key === 'Escape' && loginOpen.value) loginOpen.value = false
 }
 
-onMounted(() => {
-  collapsed.value = localStorage.getItem('lunatix-sidebar-collapsed') === 'true'
-  window.addEventListener('keydown', onKeydown)
-})
-
-onBeforeUnmount(() => {
-  window.removeEventListener('keydown', onKeydown)
-})
+function openApp(app: { href: string }) {
+  if (app.href.startsWith('http')) window.open(app.href, '_blank')
+  else navigateTo(app.href)
+}
+onMounted(() => window.addEventListener('keydown', onKeydown))
+onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
 
 async function openDoc(id: string) {
   if (currentDocId.value === id) return
@@ -77,10 +66,8 @@ async function deleteDoc(id: string) {
   if (!authed.value) return
   await remove(id)
   await refresh()
-
   if (currentDocId.value === id) {
-    const fallback = docs.value.find(d => d.id === 'welcome') || docs.value[0]
-    currentDocId.value = fallback?.id || null
+    currentDocId.value = docs.value[0]?.id || null
   }
 }
 
@@ -104,94 +91,66 @@ async function submitLogin() {
 
 <template>
   <aside
-    class="flex h-full shrink-0 flex-col border-e border-(--ui-border) bg-(--ui-bg-muted)/40 transition-all duration-200"
+    class="flex h-full shrink-0 flex-col border-r border-(--border) transition-all duration-200"
     :class="collapsed ? 'w-12' : 'w-60'"
   >
-    <div class="flex h-12 shrink-0 items-center justify-between gap-1 px-2">
-      <span
-        v-if="!collapsed"
-        class="flex items-center gap-1 px-1 font-semibold tracking-tight"
-      >
-        lunatix <span class="text-(--ui-primary)">docs</span>
+    <div class="flex h-14 shrink-0 items-center justify-between gap-1 px-2">
+      <span v-if="!collapsed" class="flex items-center gap-1 px-1 font-semibold tracking-tight">
+        lunatix <span class="text-(--accent)">docs</span>
       </span>
-      <UButton
-        :icon="collapsed ? 'i-lucide-panel-left-open' : 'i-lucide-panel-left-close'"
-        color="neutral"
+      <AppButton
         variant="ghost"
-        size="sm"
+        :icon="collapsed ? 'panel-left-open' : 'panel-left-close'"
         :aria-label="collapsed ? 'Expand sidebar' : 'Collapse sidebar'"
         @click="collapsed = !collapsed"
       />
     </div>
 
-    <div
-      v-if="!collapsed"
-      class="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-2 py-2"
-    >
+    <div v-if="!collapsed" class="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-2 py-2">
       <nav class="flex flex-col gap-0.5">
-        <p class="px-2 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-(--ui-text-muted)">
-          Apps
-        </p>
-        <UButton
+        <p class="px-2 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-(--fg-muted)">Apps</p>
+        <AppButton
           v-for="app in apps"
           :key="app.href"
-          :icon="app.icon"
-          :label="app.label"
-          :to="app.href"
-          target="_blank"
-          color="neutral"
           variant="ghost"
-          size="sm"
+          :icon="app.icon"
           class="justify-start"
-          :ui="{ label: 'truncate' }"
-        />
+          @click="openApp(app)"
+        >
+          {{ app.label }}
+        </AppButton>
       </nav>
 
       <div class="flex min-h-0 flex-1 flex-col">
         <div class="flex items-center justify-between px-2 pb-1.5">
-          <p class="text-[11px] font-semibold uppercase tracking-wider text-(--ui-text-muted)">
-            Documents
-          </p>
-          <UButton
+          <p class="text-[11px] font-semibold uppercase tracking-wider text-(--fg-muted)">Documents</p>
+          <AppButton
             v-if="authed"
-            icon="i-lucide-plus"
+            icon="plus"
             size="xs"
-            color="neutral"
             variant="ghost"
             :loading="creating"
-            aria-label="New document"
+            :aria-label="'New document'"
             @click="newDoc"
           />
         </div>
 
-        <p
-          v-if="!authed"
-          class="mb-2 px-2 text-xs text-(--ui-text-muted)"
-        >
-          Read-only shared documents.
-        </p>
+        <p v-if="!authed" class="mb-2 px-2 text-xs text-(--fg-muted)">Read-only shared documents.</p>
 
         <ul class="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto">
-          <li
-            v-for="doc in docs"
-            :key="doc.id"
-            class="group flex items-center"
-          >
-            <UButton
-              :icon="'i-lucide-file-text'"
-              :label="doc.title || 'Untitled'"
-              color="neutral"
+          <li v-for="doc in docs" :key="doc.id" class="group flex items-center">
+            <AppButton
               variant="ghost"
-              size="sm"
+              :icon="'file-text'"
+              class="flex-1 justify-start min-w-0"
               :active="currentDocId === doc.id"
-              class="justify-start flex-1 min-w-0"
-              :ui="{ label: 'truncate' }"
               @click="openDoc(doc.id)"
-            />
-            <UButton
+            >
+              <span class="truncate">{{ doc.title || 'Untitled' }}</span>
+            </AppButton>
+            <AppButton
               v-if="authed"
-              icon="i-lucide-trash"
-              color="neutral"
+              icon="trash"
               variant="ghost"
               size="xs"
               class="mr-1 hidden group-hover:flex"
@@ -203,83 +162,45 @@ async function submitLogin() {
       </div>
     </div>
 
-    <div class="flex shrink-0 items-center gap-1 border-t border-(--ui-border) p-2">
-      <UButton
+    <div class="flex shrink-0 items-center gap-1 border-t border-(--border) p-2">
+      <AppButton
         v-if="!authed"
-        icon="i-lucide-log-in"
-        :label="collapsed ? undefined : 'Login'"
-        :aria-label="'Login'"
-        color="neutral"
-        variant="ghost"
-        size="sm"
+        icon="log-in"
+        :label="collapsed ? undefined : undefined"
         class="flex-1 justify-start"
+        :aria-label="'Login'"
         @click="loginOpen = true"
-      />
+      >
+        <span v-if="!collapsed">Login</span>
+      </AppButton>
       <template v-else>
-        <div
-          v-if="!collapsed"
-          class="flex flex-1 items-center gap-1.5 px-1.5 text-xs text-(--ui-text-muted)"
-        >
-          <span class="size-1.5 rounded-full bg-(--ui-success)" />
+        <div v-if="!collapsed" class="flex flex-1 items-center gap-1.5 px-1.5 text-xs text-(--fg-muted)">
+          <span class="size-1.5 rounded-full bg-(--success)" />
           <span class="truncate">Signed in</span>
         </div>
-        <UButton
-          icon="i-lucide-log-out"
+        <AppButton
+          icon="log-out"
           :aria-label="'Logout'"
-          color="neutral"
           variant="ghost"
-          size="sm"
           @click="logout()"
         />
       </template>
     </div>
 
-    <Teleport to="body">
-      <div
-        v-if="loginOpen"
-        class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-        @click.self="loginOpen = false"
-      >
-        <div class="w-[320px] rounded-xl border border-(--ui-border) bg-(--ui-bg) p-5 shadow-xl">
-          <div class="mb-4 text-center">
-            <h3 class="text-lg font-semibold">
-              Sign in
-            </h3>
-            <p class="mt-1 text-sm text-(--ui-text-muted)">
-              Enter the admin password to manage documents.
-            </p>
-          </div>
-
-          <form
-            class="flex flex-col gap-3"
-            @submit.prevent="submitLogin"
-          >
-            <input
-              ref="passwordInput"
-              v-model="password"
-              type="password"
-              name="password"
-              placeholder="Password"
-              autocomplete="current-password"
-              class="w-full rounded-md border border-(--ui-border) bg-(--ui-bg-elevated) px-3 py-2 text-sm outline-none focus:border-(--ui-primary)"
-              :disabled="loginLoading"
-            />
-            <p
-              v-if="loginError"
-              class="text-sm text-(--ui-error)"
-            >
-              {{ loginError }}
-            </p>
-            <button
-              type="submit"
-              class="w-full rounded-md bg-(--ui-primary) px-3 py-2 text-sm font-medium text-white transition-opacity disabled:opacity-60"
-              :disabled="loginLoading"
-            >
-              {{ loginLoading ? 'Signing in…' : 'Sign in' }}
-            </button>
-          </form>
-        </div>
-      </div>
-    </Teleport>
+    <AppModal :open="loginOpen" title="Sign in" @close="loginOpen = false">
+      <p class="mb-4 text-sm text-(--fg-muted)">Enter the admin password to manage documents.</p>
+      <form class="flex flex-col gap-3" @submit.prevent="submitLogin">
+        <AppInput
+          ref="passwordInput"
+          v-model="password"
+          type="password"
+          placeholder="Password"
+          :disabled="loginLoading"
+          autofocus
+        />
+        <p v-if="loginError" class="text-sm text-(--danger)">{{ loginError }}</p>
+        <AppButton block :loading="loginLoading" type="submit">Sign in</AppButton>
+      </form>
+    </AppModal>
   </aside>
 </template>
