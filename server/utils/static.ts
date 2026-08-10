@@ -1,8 +1,26 @@
 import type { App } from 'h3'
 import { defineEventHandler, serveStatic, getRequestURL } from 'h3'
 import { existsSync, statSync, readFileSync } from 'node:fs'
-import { dirname, resolve } from 'node:path'
+import { dirname, extname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+
+const MIME: Record<string, string> = {
+  '.js': 'text/javascript',
+  '.mjs': 'text/javascript',
+  '.css': 'text/css',
+  '.json': 'application/json',
+  '.html': 'text/html',
+  '.xml': 'application/xml',
+  '.txt': 'text/plain',
+  '.ico': 'image/x-icon',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.svg': 'image/svg+xml',
+  '.woff': 'font/woff',
+  '.woff2': 'font/woff2',
+  '.map': 'application/json',
+}
 
 export function registerStaticRoutes(app: App) {
   const bundleDir = dirname(fileURLToPath(import.meta.url))
@@ -41,7 +59,11 @@ export function registerStaticRoutes(app: App) {
           const file = resolve(dist, id.replace(/^\/+/, ''))
           if (!existsSync(file)) return undefined
           const stat = statSync(file)
-          return { type: 'file', size: stat.size, mtime: stat.mtimeMs }
+          return {
+            type: MIME[extname(file)] ?? 'application/octet-stream',
+            size: stat.size,
+            mtime: stat.mtimeMs,
+          }
         },
         getContents: (id) => {
           const file = resolve(dist, id.replace(/^\/+/, ''))
