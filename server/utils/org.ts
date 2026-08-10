@@ -48,3 +48,59 @@ export function orgToHtml(org: string): Promise<string> {
     .process(org)
     .then((f) => f.toString())
 }
+
+export interface TocEntry {
+  level: number
+  title: string
+  slug: string
+}
+
+export function slugifyHeading(text: string): string {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\u00e0-\u00ff]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 80) || 'section'
+}
+
+function walkHeadlines(node: any, out: TocEntry[]): void {
+  if (!node || typeof node !== 'object') return
+  if (Array.isArray(node)) {
+    for (const child of node) walkHeadlines(child, out)
+    return
+  }
+  if (node.type === 'headline') {
+    const title = String((node as any).rawValue ?? '')
+    if (title) {
+      out.push({ level: (node as any).level ?? 1, title, slug: slugifyHeading(title) })
+    }
+  }
+  for (const key of ['children', 'content']) {
+    if (node[key] !== undefined) walkHeadlines(node[key], out)
+  }
+}
+
+export function buildToc(org: string): TocEntry[] {
+  const ast = parseOrg(org)
+  const toc: TocEntry[] = []
+  walkHeadlines(ast, toc)
+  return toc
+}
+
+export function orgToHtmlWithToc(org: string): Promise<{ html: string, toc: TocEntry[] }> {
+  return orgToHtml(org).then((html) => {
+    const toc = buildToc(org)
+    if (toc.length === 0) return { html, toc }
+    // inject id="<slug>" into headings in document order (matches AST order)
+    let i = 0
+    const withIds = html.replace(/<h([1-6])([^>]*)>/g, (m, level, attrs) => {
+      const entry = toc[i]
+      i++
+      if (!entry || entry.level !== Number(level)) return m
+      const id = ` id="${entry.slug}"`
+      return `<h${level}${attrs}${attrs.includes('id=') ? '' : id}>`
+    })
+    return { html: withIds, toc }
+  })
+}

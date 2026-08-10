@@ -26,6 +26,7 @@ import {
   saveNote
 } from './utils/notes'
 import { assertDocId, EMPTY_CONTENT, listDocs, readStoredDoc, removeDoc, saveDoc } from './utils/docs'
+import { buildGraph } from './utils/graph'
 
 const PORT = Number(process.env.PORT || 3100)
 const PUBLIC_DIR = process.env.PUBLIC_DIR || join(dirname(fileURLToPath(import.meta.url)), 'dist')
@@ -68,6 +69,13 @@ router.post('/api/notes', defineEventHandler(async (event) => {
   requireAuth(event)
   const body = await readBody<{ title?: string, folder?: string }>(event)
   return await createNote(body ?? {})
+}))
+
+// --- notes graph (protected) ---
+// registered before /api/notes/:id so "graph" is not swallowed by :id
+router.get('/api/notes/graph', defineEventHandler(async (event) => {
+  requireAuth(event)
+  return await buildGraph()
 }))
 
 router.get('/api/notes/:id', defineEventHandler(async (event) => {

@@ -8,6 +8,13 @@ export interface NoteMeta {
   tags: string[]
   public: boolean
   updatedAt: number
+  day: string
+}
+
+export interface TocEntry {
+  level: number
+  title: string
+  slug: string
 }
 
 export interface StoredNote {
@@ -21,6 +28,25 @@ export interface StoredNote {
     tags: string[]
   }
   html: string
+  toc: TocEntry[]
+}
+
+export interface GraphNode {
+  id: string
+  title: string
+  filename: string
+  day: string
+}
+
+export interface GraphEdge {
+  from: string
+  to: string
+  kind: string
+}
+
+export interface NoteGraph {
+  nodes: GraphNode[]
+  edges: GraphEdge[]
 }
 
 export interface DocMeta {

@@ -12,6 +12,7 @@
     "typecheck": "vue-tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.server.json"
   },
   "dependencies": {
+    "d3-force": "^3.0.0",
     "h3": "^1.15.11",
     "rehype-stringify": "^10.0.1",
     "tailwindcss": "^4.3.3",
@@ -23,6 +24,7 @@
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.3",
+    "@types/d3-force": "^3.0.10",
     "@types/node": "^26.2.0",
     "@vitejs/plugin-vue": "^6.0.8",
     "esbuild": "^0.28.2",

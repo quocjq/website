@@ -126,7 +126,7 @@ var require_extend = __commonJS({
 // server/index.ts
 import { createServer } from "node:http";
 import { join as join3, extname, normalize as normalize2, dirname as dirname2 } from "node:path";
-import { readFile as readFile3, stat as stat2 } from "node:fs/promises";
+import { readFile as readFile4, stat as stat2 } from "node:fs/promises";
 import { fileURLToPath as fileURLToPath2 } from "node:url";
 import { randomUUID } from "node:crypto";
 
@@ -9606,9 +9606,53 @@ function extractHeader(org) {
 function orgToHtml(org) {
   return unified().use(unified_org_parse_default).use(unified_org_rehype_default.default ?? unified_org_rehype_default).use(rehypeStringify).process(org).then((f) => f.toString());
 }
+function slugifyHeading(text2) {
+  return text2.toLowerCase().trim().replace(/[^a-z0-9\u00e0-\u00ff]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 80) || "section";
+}
+function walkHeadlines(node, out) {
+  if (!node || typeof node !== "object") return;
+  if (Array.isArray(node)) {
+    for (const child of node) walkHeadlines(child, out);
+    return;
+  }
+  if (node.type === "headline") {
+    const title = String(node.rawValue ?? "");
+    if (title) {
+      out.push({ level: node.level ?? 1, title, slug: slugifyHeading(title) });
+    }
+  }
+  for (const key2 of ["children", "content"]) {
+    if (node[key2] !== void 0) walkHeadlines(node[key2], out);
+  }
+}
+function buildToc(org) {
+  const ast = parseOrg(org);
+  const toc = [];
+  walkHeadlines(ast, toc);
+  return toc;
+}
+function orgToHtmlWithToc(org) {
+  return orgToHtml(org).then((html5) => {
+    const toc = buildToc(org);
+    if (toc.length === 0) return { html: html5, toc };
+    let i = 0;
+    const withIds = html5.replace(/<h([1-6])([^>]*)>/g, (m, level, attrs) => {
+      const entry = toc[i];
+      i++;
+      if (!entry || entry.level !== Number(level)) return m;
+      const id = ` id="${entry.slug}"`;
+      return `<h${level}${attrs}${attrs.includes("id=") ? "" : id}>`;
+    });
+    return { html: withIds, toc };
+  });
+}
 
 // server/utils/notes.ts
 var DENOTE_RE = /^(\d{8}T\d{6})--([^__]+?)(?:__(.+))?$/;
+function dayOfId(id) {
+  const m = /^(\d{4})(\d{2})(\d{2})T/.exec(id);
+  return m ? `${m[1]}-${m[2]}-${m[3]}` : "";
+}
 function getNotesDir() {
   return process.env.NOTES_DIR || "/root/Notes";
 }
@@ -9665,7 +9709,8 @@ async function readNoteMeta(fullPath, dir) {
     date: header.date,
     tags: name?.tags ?? (header.filetags ? header.filetags.replace(/^:|:$/g, "").split(":").filter(Boolean) : []),
     public: header.public,
-    updatedAt: st.mtimeMs
+    updatedAt: st.mtimeMs,
+    day: dayOfId(header.identifier || name?.identifier || "")
   };
 }
 function fallbackId(filename) {
@@ -9692,7 +9737,7 @@ async function readNote(id) {
   const header = extractHeader(raw2);
   const dir = getNotesDir();
   const meta = await readNoteMeta(fullPath, dir);
-  const html5 = await orgToHtml(raw2);
+  const { html: html5, toc } = await orgToHtmlWithToc(raw2);
   return {
     id,
     meta: {
@@ -9703,7 +9748,8 @@ async function readNote(id) {
       public: header.public,
       tags: meta?.tags ?? []
     },
-    html: html5
+    html: html5,
+    toc
   };
 }
 function slugify(title) {
@@ -9756,8 +9802,8 @@ async function readPublicNote(id) {
     if (!header.public) return null;
     const dir = getNotesDir();
     const meta = await readNoteMeta(fullPath, dir);
-    const html5 = await orgToHtml(raw2);
-    return { meta, html: html5 };
+    const { html: html5, toc } = await orgToHtmlWithToc(raw2);
+    return { meta, html: html5, toc };
   } catch {
     return null;
   }
@@ -9854,6 +9900,71 @@ async function removeDoc(id) {
   await unlink2(join2(getDocsDir(), `${id}.json`));
 }
 
+// server/utils/graph.ts
+import { readFile as readFile3 } from "node:fs/promises";
+function walkLinks(node, out) {
+  if (!node || typeof node !== "object") return;
+  if (Array.isArray(node)) {
+    for (const child of node) walkLinks(child, out);
+    return;
+  }
+  if (node.type === "link") {
+    const linkType = String(node.linkType ?? "");
+    const path = String(node.path ?? "");
+    if (linkType && path) out.push({ type: linkType, path });
+  }
+  for (const key2 of ["children", "content"]) {
+    if (node[key2] !== void 0) walkLinks(node[key2], out);
+  }
+}
+async function buildGraph() {
+  const notes = await listNotes();
+  const byId = /* @__PURE__ */ new Map();
+  const byFilename = /* @__PURE__ */ new Map();
+  for (const n of notes) {
+    byId.set(n.id, n);
+    byFilename.set(n.filename, n);
+  }
+  const nodes = notes.map((n) => ({
+    id: n.id,
+    title: n.title,
+    filename: n.filename,
+    day: n.day
+  }));
+  const edges = [];
+  const seen = /* @__PURE__ */ new Set();
+  const dir = getNotesDir();
+  for (const n of notes) {
+    let raw2;
+    try {
+      raw2 = await readFile3(`${dir}/${n.relPath}`, "utf-8");
+    } catch {
+      continue;
+    }
+    const links = [];
+    walkLinks(parseOrg(raw2), links);
+    for (const link of links) {
+      let type = link.type;
+      let path = link.path;
+      const colon = path.indexOf(":");
+      if (type === "fuzzy" && colon > 0) {
+        const proto = path.slice(0, colon);
+        if (proto === "denote" || proto === "id" || proto === "file") {
+          type = proto;
+          path = path.slice(colon + 1);
+        }
+      }
+      const target = type === "denote" || type === "id" ? byId.get(path) : byFilename.get(path);
+      if (!target) continue;
+      const key2 = `${n.id}|${target.id}|${type}`;
+      if (seen.has(key2)) continue;
+      seen.add(key2);
+      edges.push({ from: n.id, to: target.id, kind: type });
+    }
+  }
+  return { nodes, edges };
+}
+
 // server/index.ts
 var PORT = Number(process.env.PORT || 3100);
 var PUBLIC_DIR = process.env.PUBLIC_DIR || join3(dirname2(fileURLToPath2(import.meta.url)), "dist");
@@ -9887,6 +9998,10 @@ router.post("/api/notes", defineEventHandler(async (event) => {
   requireAuth(event);
   const body3 = await readBody(event);
   return await createNote(body3 ?? {});
+}));
+router.get("/api/notes/graph", defineEventHandler(async (event) => {
+  requireAuth(event);
+  return await buildGraph();
 }));
 router.get("/api/notes/:id", defineEventHandler(async (event) => {
   requireAuth(event);
@@ -10007,7 +10122,7 @@ router.use("/**", defineEventHandler(async (event) => {
     filePath = join3(root2, "index.html");
   }
   try {
-    const data = await readFile3(filePath);
+    const data = await readFile4(filePath);
     setHeader(event, "content-type", MIME[extname(filePath)] || "application/octet-stream");
     return data;
   } catch {

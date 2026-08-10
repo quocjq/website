@@ -1,7 +1,7 @@
 import { readdir, readFile, writeFile, rename, unlink, mkdir, stat } from 'node:fs/promises'
 import { join, relative, dirname, basename } from 'node:path'
 import { createError } from 'h3'
-import { extractHeader, orgToHtml } from './org'
+import { extractHeader, orgToHtmlWithToc } from './org'
 
 export interface NoteMeta {
   id: string
@@ -13,9 +13,16 @@ export interface NoteMeta {
   tags: string[]
   public: boolean
   updatedAt: number
+  day: string
 }
 
 const DENOTE_RE = /^(\d{8}T\d{6})--([^__]+?)(?:__(.+))?$/
+
+export function dayOfId(id: string): string {
+  // identifier 20260810T153745 → 2026-08-10
+  const m = /^(\d{4})(\d{2})(\d{2})T/.exec(id)
+  return m ? `${m[1]}-${m[2]}-${m[3]}` : ''
+}
 
 export function getNotesDir() {
   return process.env.NOTES_DIR || '/root/Notes'
@@ -78,7 +85,8 @@ async function readNoteMeta(fullPath: string, dir: string): Promise<NoteMeta | n
     date: header.date,
     tags: name?.tags ?? (header.filetags ? header.filetags.replace(/^:|:$/g, '').split(':').filter(Boolean) : []),
     public: header.public,
-    updatedAt: st.mtimeMs
+    updatedAt: st.mtimeMs,
+    day: dayOfId(header.identifier || name?.identifier || '')
   }
 }
 
@@ -109,7 +117,7 @@ export async function readNote(id: string) {
   const header = extractHeader(raw)
   const dir = getNotesDir()
   const meta = await readNoteMeta(fullPath, dir)
-  const html = await orgToHtml(raw)
+  const { html, toc } = await orgToHtmlWithToc(raw)
   return {
     id,
     meta: {
@@ -120,7 +128,8 @@ export async function readNote(id: string) {
       public: header.public,
       tags: meta?.tags ?? []
     },
-    html
+    html,
+    toc
   }
 }
 
@@ -167,7 +176,7 @@ export async function listPublicNotes(): Promise<NoteMeta[]> {
   return all.filter((n) => n.public)
 }
 
-export async function readPublicNote(id: string): Promise<{ meta: NoteMeta, html: string } | null> {
+export async function readPublicNote(id: string): Promise<{ meta: NoteMeta, html: string, toc: import('./org').TocEntry[] } | null> {
   try {
     const { fullPath } = await findNote(id)
     const raw = await readFile(fullPath, 'utf-8')
@@ -175,8 +184,8 @@ export async function readPublicNote(id: string): Promise<{ meta: NoteMeta, html
     if (!header.public) return null
     const dir = getNotesDir()
     const meta = await readNoteMeta(fullPath, dir)
-    const html = await orgToHtml(raw)
-    return { meta: meta!, html }
+    const { html, toc } = await orgToHtmlWithToc(raw)
+    return { meta: meta!, html, toc }
   } catch {
     return null
   }

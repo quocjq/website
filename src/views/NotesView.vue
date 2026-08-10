@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import AppHeader from '../components/AppHeader.vue'
+import AppRightBar from '../components/AppRightBar.vue'
 import { apiFetch } from '../lib/api'
 import { isNoteHost } from '../lib/host'
 import { useAuth } from '../composables/useAuth'
@@ -45,6 +46,11 @@ async function loadPublic() {
   publicNotes.value = await apiFetch<NoteMeta[]>('/api/public')
 }
 
+function selectNote(id: string) {
+  currentNoteId.value = id
+  fetchNote(id)
+}
+
 onMounted(async () => {
   if (noteHost) {
     await Promise.all([check(), refresh()])
@@ -72,7 +78,7 @@ onMounted(async () => {
           </template>
         </AppHeader>
 
-        <div class="flex-1 overflow-y-auto p-4 sm:p-10">
+        <div class="flex-1 overflow-y-auto p-4 sm:p-10 reader-scroll">
           <div v-if="note" class="mx-auto max-w-4xl">
             <div class="note-body" v-html="note.html" />
           </div>
@@ -81,6 +87,13 @@ onMounted(async () => {
             {{ authed ? 'Select a note' : 'Login to view notes' }}
           </div>
         </div>
+
+        <AppRightBar
+          :note="note"
+          :notes="notes"
+          :current-note-id="currentNoteId"
+          @select="selectNote"
+        />
       </div>
     </template>
 
