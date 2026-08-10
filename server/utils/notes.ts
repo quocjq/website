@@ -106,18 +106,21 @@ export async function findNote(id: string): Promise<{ fullPath: string, dir: str
 export async function readNote(id: string) {
   const { fullPath } = await findNote(id)
   const raw = await readFile(fullPath, 'utf-8')
-  const { header, content } = orgToJson(raw)
+  const { header } = orgToJson(raw)
+  const dir = getNotesDir()
+  const meta = await readNoteMeta(fullPath, dir)
+  const html = await orgToHtml(raw)
   return {
     id,
     meta: {
       id,
       filename: basename(fullPath),
-      title: header.title || id,
+      title: meta?.title ?? header.title ?? id,
+      date: meta?.date ?? '',
       public: header.public,
-      tags: header.filetags ? header.filetags.replace(/^:|:$/g, '').split(':').filter(Boolean) : []
+      tags: meta?.tags ?? []
     },
-    sourceHash: hashNote({ type: 'doc', content }),
-    content: { type: 'doc', content }
+    html
   }
 }
 

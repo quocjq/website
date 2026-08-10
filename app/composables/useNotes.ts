@@ -19,8 +19,7 @@ export interface NoteMeta {
 export interface StoredNote {
   id: string
   meta: any
-  sourceHash: string
-  content: Record<string, any>
+  html: string
 }
 
 export function useNotes() {
