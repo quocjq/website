@@ -3,27 +3,32 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "nuxt build",
-    "dev": "nuxt dev",
-    "preview": "nuxt preview",
-    "typecheck": "nuxi typecheck",
-    "postinstall": "nuxt prepare"
-  },
-  "devDependencies": {
-    "@types/node": "^26.2.0",
-    "typescript": "^6.0.3",
-    "vue-router": "5.2.0",
-    "vue-tsc": "^3.3.9"
+    "dev": "vite",
+    "dev:server": "tsx watch server/index.ts",
+    "build:web": "vite build",
+    "build:server": "esbuild server/index.ts --bundle --platform=node --format=esm --outfile=dist-server/index.mjs",
+    "build": "npm run build:web && npm run build:server",
+    "preview": "node dist-server/index.mjs",
+    "typecheck": "vue-tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.server.json"
   },
   "dependencies": {
-    "@nuxt/eslint": "^1.17.0",
-    "@tailwindcss/vite": "^4.3.3",
-    "nuxt": "^4.5.1",
-    "nuxt-csurf": "^1.6.6",
+    "h3": "^1.15.11",
     "rehype-stringify": "^10.0.1",
     "tailwindcss": "^4.3.3",
     "uniorg-parse": "^3.2.2",
     "uniorg-rehype": "^2.2.0",
-    "uniorg-stringify": "^1.4.0"
+    "uniorg-stringify": "^1.4.0",
+    "vue": "^3.5.41",
+    "vue-router": "^5.2.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^26.2.0",
+    "@vitejs/plugin-vue": "^6.0.8",
+    "esbuild": "^0.28.2",
+    "tsx": "^4.20.0",
+    "typescript": "^6.0.3",
+    "vite": "^8.2.1",
+    "vue-tsc": "^3.3.9"
   }
 }

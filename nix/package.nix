@@ -9,26 +9,28 @@ let
     src = ../.;
     filter = name: type:
       let base = baseNameOf name;
-      in !(type == "directory" && (base == "node_modules" || base == ".output" || base == ".nuxt" || base == ".git"));
+      in !(type == "directory" && (base == "node_modules" || base == "dist" || base == "dist-server" || base == ".git"));
   };
 in
 buildNpmPackage {
   pname = "lunatix-website";
-  version = "0.1.0";
+  version = "0.2.0";
   inherit src;
   nodejs = nodejs;
 
-  npmDepsHash = "sha256-05u/ocGOvrhMQIG2hbDXEdLALCYYDsX2Xv37euUvh+M=";
+  npmDepsHash = "sha256-rYKtQg+lEPnmdzq3Zf4EA8aB+ulrYpU48ZPVRhWhyg4=";
 
-  # Nuxt's build fails under a non-TTY (consola/colors), so we run it ourselves.
+  # npm ci honors NODE_ENV=production and would skip the devDeps (vite,
+  # @vitejs/plugin-vue) the build needs; keep it out of the derivation env and
+  # only set it during the actual build.
   dontNpmBuild = true;
 
-  NODE_ENV = "production";
   FORCE_COLOR = "0";
   CI = "true";
 
   buildPhase = ''
     runHook preBuild
+    export NODE_ENV=production
     npm run build
     runHook postBuild
   '';
@@ -36,7 +38,8 @@ buildNpmPackage {
   installPhase = ''
     runHook preInstall
     mkdir -p $out/share/lunatix-website
-    cp -r .output $out/share/lunatix-website/
+    cp -r dist $out/share/lunatix-website/
+    cp dist-server/index.mjs $out/share/lunatix-website/index.mjs
     runHook postInstall
   '';
 }
