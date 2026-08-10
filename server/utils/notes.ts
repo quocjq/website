@@ -26,8 +26,8 @@ function parseDenoteName(filename: string): { identifier: string, title: string,
   const m = DENOTE_RE.exec(base)
   if (!m) return null
   return {
-    identifier: m[1],
-    title: m[2].replace(/-/g, ' '),
+    identifier: m[1] ?? '',
+    title: (m[2] ?? '').replace(/-/g, ' '),
     tags: m[3] ? m[3].split('_').filter(Boolean) : []
   }
 }
@@ -70,7 +70,7 @@ async function readNoteMeta(fullPath: string, dir: string): Promise<NoteMeta | n
   const { header } = orgToJson(raw)
   const st = await stat(fullPath)
   return {
-    id: name?.identifier ?? header.identifier || fallbackId(basename(fullPath)),
+    id: name?.identifier ?? (header.identifier || fallbackId(basename(fullPath))),
     filename: basename(fullPath),
     relPath: relative(dir, fullPath),
     folder: dirname(relative(dir, fullPath)) === '.' ? '' : dirname(relative(dir, fullPath)),
@@ -116,7 +116,7 @@ export async function readNote(id: string) {
       public: header.public,
       tags: header.filetags ? header.filetags.replace(/^:|:$/g, '').split(':').filter(Boolean) : []
     },
-    sourceHash: hashNote(content),
+    sourceHash: hashNote({ type: 'doc', content }),
     content: { type: 'doc', content }
   }
 }
@@ -125,19 +125,28 @@ function slugify(title: string): string {
   return title.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80) || 'untitled'
 }
 
-export async function saveNote(id: string, body: { content?: Record<string, any> }) {
+export async function saveNote(id: string, body: { content?: Record<string, any>, sourceHash?: string, title?: string }) {
   if (!body?.content || typeof body.content !== 'object') {
     throw createError({ statusCode: 400, statusMessage: 'content is required' })
   }
-  const { fullPath, dir } = await findNote(id)
+  const { fullPath } = await findNote(id)
   const raw = await readFile(fullPath, 'utf-8')
   const { header } = orgToJson(raw)
 
-  const nextTitle = header.title
   const newContent = body.content
+  const bodyTitle = typeof body.title === 'string' ? body.title.trim() : ''
+  const titleChanged = !!bodyTitle && bodyTitle !== header.title
+  let nextTitle = header.title
+  if (titleChanged) {
+    nextTitle = bodyTitle
+    header.rawKeywords = header.rawKeywords.map((k) =>
+      k.startsWith('#+TITLE:') || k.startsWith('#+title:') ? `#+title: ${nextTitle}` : k
+    )
+    header.title = nextTitle
+  }
 
   // zero-edit no-op: if content unchanged, write original bytes verbatim
-  if (body.sourceHash && body.sourceHash === hashNote(newContent)) {
+  if (!titleChanged && body.sourceHash && body.sourceHash === hashNote({ type: 'doc', content: newContent.content })) {
     return { rewritten: false, id, meta: { id, title: nextTitle } }
   }
 
@@ -145,6 +154,9 @@ export async function saveNote(id: string, body: { content?: Record<string, any>
   const tmp = `${fullPath}.${process.pid}.tmp`
   await writeFile(tmp, org, 'utf-8')
   await rename(tmp, fullPath)
+  if (titleChanged) {
+    await renameNoteFile(id, nextTitle)
+  }
   return { rewritten: true, id, meta: { id, title: nextTitle } }
 }
 
@@ -179,3 +191,4 @@ export async function renameNoteFile(id: string, newTitle: string) {
   if (name === basename(fullPath)) return
   const newPath = join(dir, name)
   await rename(fullPath, newPath)
+}
