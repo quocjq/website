@@ -1,10 +1,14 @@
 import type { App } from 'h3'
 import { defineEventHandler, serveStatic, getRequestURL } from 'h3'
 import { existsSync, statSync, readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 export function registerStaticRoutes(app: App) {
-  const dist = resolve(process.env.PUBLIC_DIR ?? 'dist')
+  // Default: dist/ sits next to the built server bundle (index.mjs → ../dist).
+  // In the Nix install that's <out>/share/lunatix-website/dist.
+  const bundleDir = dirname(fileURLToPath(import.meta.url))
+  const dist = resolve(process.env.PUBLIC_DIR ?? resolve(bundleDir, '..', 'dist'))
 
   const isAssetPath = (pathname: string) =>
     !pathname.startsWith('/api/') &&
