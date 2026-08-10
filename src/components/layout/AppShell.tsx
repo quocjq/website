@@ -3,7 +3,6 @@ import { NavLink, Outlet } from 'react-router-dom'
 import { useTheme } from '../../hooks/useTheme'
 
 const navItems = [
-  { to: '/', label: 'Dashboard', icon: 'grid' },
   { to: '/blog', label: 'Blog', icon: 'note' },
   { to: '/projects', label: 'Projects', icon: 'archive' },
 ] as const
@@ -35,7 +34,7 @@ export default function AppShell() {
             <NavLink
               key={item.to}
               to={item.to}
-              end={item.to === '/'}
+              end={item.to === '/blog'}
               className={({ isActive }) =>
                 `flex items-center gap-2 rounded px-2 py-1.5 text-sm transition-colors ${
                   isActive
@@ -75,7 +74,6 @@ export default function AppShell() {
 
 function icon(name: string) {
   const glyphs: Record<string, string> = {
-    grid: '▦',
     note: '▤',
     archive: '▥',
   }

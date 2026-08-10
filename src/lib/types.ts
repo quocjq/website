@@ -1,10 +1,3 @@
-export type WidgetStatus = 'ok' | 'error' | 'unknown'
-
-export interface ServiceStatus {
-  status: WidgetStatus
-  message: string
-}
-
 export interface NoteMeta {
   id: string
   filename: string

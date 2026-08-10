@@ -1,4 +1,4 @@
-import type { NoteContent, NoteMeta, ServiceStatus } from './types'
+import type { NoteContent, NoteMeta } from './types'
 
 async function json<T>(path: string): Promise<T> {
   const res = await fetch(path)
@@ -6,10 +6,6 @@ async function json<T>(path: string): Promise<T> {
     throw new Error(`GET ${path} → ${res.status}`)
   }
   return res.json() as Promise<T>
-}
-
-export function fetchServiceStatus(path: string): Promise<ServiceStatus> {
-  return json<ServiceStatus>(path)
 }
 
 export function fetchNotes(tag?: string): Promise<NoteMeta[]> {

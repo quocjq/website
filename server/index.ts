@@ -1,12 +1,10 @@
 import { createApp, toNodeListener } from 'h3'
 import { createServer } from 'node:http'
-import { defineStatusRoutes } from './utils/status'
 import { defineNotesRoutes } from './utils/notesRoutes'
 import { registerStaticRoutes } from './utils/static'
 
 const app = createApp()
 
-defineStatusRoutes(app)
 defineNotesRoutes(app)
 
 registerStaticRoutes(app)
