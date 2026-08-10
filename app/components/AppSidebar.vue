@@ -96,7 +96,7 @@ async function submitLogin() {
   >
     <div class="flex h-14 shrink-0 items-center justify-between gap-1 px-2">
       <span v-if="!collapsed" class="flex items-center gap-1 px-1 font-semibold tracking-tight">
-        lunatix <span class="text-(--accent)">docs</span>
+        Lunatix
       </span>
       <AppButton
         variant="ghost"

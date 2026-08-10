@@ -86,14 +86,15 @@ const folders = computed(() => Array.from(new Set(notes.value.map((n) => n.folde
       <div class="flex flex-1 flex-col min-w-0">
         <AppHeader>
           <template #brand>
-            <span class="flex items-center gap-1 font-semibold">lunatix <span class="text-(--accent)">notes</span></span>
+            <span class="flex items-center gap-2 font-semibold">
+              <span v-if="note" class="truncate">{{ note.meta.title }}</span>
+              <span v-else class="text-(--accent)">notes</span>
+            </span>
           </template>
         </AppHeader>
 
         <div class="flex-1 overflow-y-auto p-4 sm:p-10">
           <div v-if="note" class="mx-auto max-w-4xl">
-            <h1 class="text-3xl font-bold mb-2">{{ note.meta.title }}</h1>
-            <p v-if="note.meta.date" class="text-sm text-(--fg-muted) mb-6">{{ note.meta.date }}</p>
             <div class="note-body" v-html="note.html" />
           </div>
           <div v-else-if="notFound" class="mx-auto max-w-4xl text-(--fg-muted) py-16 text-center">Note not found</div>
