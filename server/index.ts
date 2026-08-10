@@ -2,7 +2,6 @@ import { createServer } from 'node:http'
 import { join, extname, normalize, dirname } from 'node:path'
 import { readFile, stat } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
-import { randomUUID } from 'node:crypto'
 import {
   createApp,
   createRouter,
@@ -25,7 +24,6 @@ import {
   removeNote,
   saveNote
 } from './utils/notes'
-import { assertDocId, EMPTY_CONTENT, listDocs, readStoredDoc, removeDoc, saveDoc } from './utils/docs'
 import { buildGraph } from './utils/graph'
 
 const PORT = Number(process.env.PORT || 3100)
@@ -122,61 +120,6 @@ router.get('/api/public/:id', defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, statusMessage: 'Not found' })
   }
   return note
-}))
-
-// --- docs (no auth, legacy welcome doc) ---
-router.get('/api/docs', defineEventHandler(async (event) => {
-  const docs = await listDocs()
-  if (docs.length === 0) {
-    const welcomeId = 'welcome'
-    const doc = {
-      id: welcomeId,
-      title: 'Welcome',
-      updatedAt: new Date().toISOString(),
-      content: {
-        type: 'doc',
-        content: [
-          { type: 'heading', attrs: { level: 1 }, content: [{ type: 'text', text: 'Welcome to Lunatix' }] }
-        ]
-      }
-    }
-    await saveDoc(welcomeId, doc.content)
-    return [{ id: welcomeId, title: 'Welcome', updatedAt: doc.updatedAt }]
-  }
-  return docs
-}))
-
-router.post('/api/docs', defineEventHandler(async () => {
-  const id = randomUUID()
-  return saveDoc(id, EMPTY_CONTENT)
-}))
-
-router.get('/api/docs/:id', defineEventHandler(async (event) => {
-  const id = assertDocId(getRouterParam(event, 'id'))
-  try {
-    return await readStoredDoc(id)
-  } catch {
-    throw createError({ statusCode: 404, statusMessage: 'Document not found' })
-  }
-}))
-
-router.put('/api/docs/:id', defineEventHandler(async (event) => {
-  const id = assertDocId(getRouterParam(event, 'id'))
-  const body = await readBody<{ content?: Record<string, any> }>(event)
-  if (!body?.content || typeof body.content !== 'object') {
-    throw createError({ statusCode: 400, statusMessage: 'content is required' })
-  }
-  return await saveDoc(id, body.content)
-}))
-
-router.delete('/api/docs/:id', defineEventHandler(async (event) => {
-  const id = assertDocId(getRouterParam(event, 'id'))
-  try {
-    await removeDoc(id)
-  } catch {
-    throw createError({ statusCode: 404, statusMessage: 'Document not found' })
-  }
-  return { ok: true }
 }))
 
 // --- static (SPA) ---

@@ -125,10 +125,9 @@ var require_extend = __commonJS({
 
 // server/index.ts
 import { createServer } from "node:http";
-import { join as join3, extname, normalize as normalize2, dirname as dirname2 } from "node:path";
-import { readFile as readFile4, stat as stat2 } from "node:fs/promises";
+import { join as join2, extname, normalize as normalize2, dirname as dirname2 } from "node:path";
+import { readFile as readFile3, stat as stat2 } from "node:fs/promises";
 import { fileURLToPath as fileURLToPath2 } from "node:url";
-import { randomUUID } from "node:crypto";
 
 // node_modules/ufo/dist/index.mjs
 var r = String.fromCharCode;
@@ -2338,10 +2337,10 @@ var VFile = class {
    * @returns {undefined}
    *   Nothing.
    */
-  set basename(basename3) {
-    assertNonEmpty(basename3, "basename");
-    assertPart(basename3, "basename");
-    this.path = default2.join(this.dirname || "", basename3);
+  set basename(basename2) {
+    assertNonEmpty(basename2, "basename");
+    assertPart(basename2, "basename");
+    this.path = default2.join(this.dirname || "", basename2);
   }
   /**
    * Get the parent path (example: `'~'`).
@@ -9825,83 +9824,8 @@ async function renameNoteFile(id, newTitle) {
   await rename(fullPath, newPath);
 }
 
-// server/utils/docs.ts
-import { mkdir as mkdir2, readdir as readdir2, readFile as readFile2, writeFile as writeFile2, unlink as unlink2 } from "node:fs/promises";
-import { join as join2, basename as basename2 } from "node:path";
-var EMPTY_CONTENT = { type: "doc", content: [{ type: "paragraph" }] };
-var DOC_ID_PATTERN = /^[a-z0-9-]+$/;
-function getDocsDir() {
-  return process.env.DOCS_DIR || "./.data/docs";
-}
-function assertDocId(id) {
-  if (!id || !DOC_ID_PATTERN.test(id)) {
-    throw createError({ statusCode: 400, statusMessage: "Invalid document id" });
-  }
-  return id;
-}
-async function ensureDocsDir() {
-  await mkdir2(getDocsDir(), { recursive: true });
-}
-async function readStoredDoc(id) {
-  const file = join2(getDocsDir(), `${id}.json`);
-  const raw2 = await readFile2(file, "utf-8");
-  return JSON.parse(raw2);
-}
-function extractText(node) {
-  if (!node) return "";
-  if (typeof node.text === "string") return node.text;
-  let out = "";
-  for (const child of node.content ?? []) {
-    out += extractText(child);
-  }
-  return out;
-}
-function deriveTitle(content) {
-  let headingText = "";
-  for (const node of content?.content ?? []) {
-    if (node?.type === "paragraph") {
-      const text2 = extractText(node).trim();
-      if (text2) return text2.slice(0, 80);
-    }
-    if (node?.type === "heading" && !headingText) {
-      headingText = extractText(node).trim().slice(0, 80);
-    }
-  }
-  return headingText || "Untitled";
-}
-async function saveDoc(id, content) {
-  await ensureDocsDir();
-  const doc = {
-    id,
-    title: deriveTitle(content),
-    updatedAt: (/* @__PURE__ */ new Date()).toISOString(),
-    content
-  };
-  await writeFile2(join2(getDocsDir(), `${id}.json`), JSON.stringify(doc, null, 2), "utf-8");
-  return doc;
-}
-async function listDocs() {
-  await ensureDocsDir();
-  const dir = getDocsDir();
-  const entries = await readdir2(dir);
-  const ids = entries.filter((f) => f.endsWith(".json")).map((f) => basename2(f, ".json")).filter((id) => DOC_ID_PATTERN.test(id));
-  const docs = await Promise.all(ids.map(async (id) => {
-    try {
-      const doc = await readStoredDoc(id);
-      return { id, title: doc.title || "Untitled", updatedAt: doc.updatedAt || "" };
-    } catch {
-      return { id, title: "Untitled", updatedAt: "" };
-    }
-  }));
-  docs.sort((a, b) => a.updatedAt < b.updatedAt ? 1 : -1);
-  return docs;
-}
-async function removeDoc(id) {
-  await unlink2(join2(getDocsDir(), `${id}.json`));
-}
-
 // server/utils/graph.ts
-import { readFile as readFile3 } from "node:fs/promises";
+import { readFile as readFile2 } from "node:fs/promises";
 function walkLinks(node, out) {
   if (!node || typeof node !== "object") return;
   if (Array.isArray(node)) {
@@ -9937,7 +9861,7 @@ async function buildGraph() {
   for (const n of notes) {
     let raw2;
     try {
-      raw2 = await readFile3(`${dir}/${n.relPath}`, "utf-8");
+      raw2 = await readFile2(`${dir}/${n.relPath}`, "utf-8");
     } catch {
       continue;
     }
@@ -9967,7 +9891,7 @@ async function buildGraph() {
 
 // server/index.ts
 var PORT = Number(process.env.PORT || 3100);
-var PUBLIC_DIR = process.env.PUBLIC_DIR || join3(dirname2(fileURLToPath2(import.meta.url)), "dist");
+var PUBLIC_DIR = process.env.PUBLIC_DIR || join2(dirname2(fileURLToPath2(import.meta.url)), "dist");
 var app = createApp();
 var router = createRouter2();
 function requireAuth(event) {
@@ -10043,55 +9967,6 @@ router.get("/api/public/:id", defineEventHandler(async (event) => {
   }
   return note;
 }));
-router.get("/api/docs", defineEventHandler(async (event) => {
-  const docs = await listDocs();
-  if (docs.length === 0) {
-    const welcomeId = "welcome";
-    const doc = {
-      id: welcomeId,
-      title: "Welcome",
-      updatedAt: (/* @__PURE__ */ new Date()).toISOString(),
-      content: {
-        type: "doc",
-        content: [
-          { type: "heading", attrs: { level: 1 }, content: [{ type: "text", text: "Welcome to Lunatix" }] }
-        ]
-      }
-    };
-    await saveDoc(welcomeId, doc.content);
-    return [{ id: welcomeId, title: "Welcome", updatedAt: doc.updatedAt }];
-  }
-  return docs;
-}));
-router.post("/api/docs", defineEventHandler(async () => {
-  const id = randomUUID();
-  return saveDoc(id, EMPTY_CONTENT);
-}));
-router.get("/api/docs/:id", defineEventHandler(async (event) => {
-  const id = assertDocId(getRouterParam(event, "id"));
-  try {
-    return await readStoredDoc(id);
-  } catch {
-    throw createError({ statusCode: 404, statusMessage: "Document not found" });
-  }
-}));
-router.put("/api/docs/:id", defineEventHandler(async (event) => {
-  const id = assertDocId(getRouterParam(event, "id"));
-  const body3 = await readBody(event);
-  if (!body3?.content || typeof body3.content !== "object") {
-    throw createError({ statusCode: 400, statusMessage: "content is required" });
-  }
-  return await saveDoc(id, body3.content);
-}));
-router.delete("/api/docs/:id", defineEventHandler(async (event) => {
-  const id = assertDocId(getRouterParam(event, "id"));
-  try {
-    await removeDoc(id);
-  } catch {
-    throw createError({ statusCode: 404, statusMessage: "Document not found" });
-  }
-  return { ok: true };
-}));
 var MIME = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
@@ -10109,20 +9984,20 @@ router.use("/**", defineEventHandler(async (event) => {
   const url = getRequestURL(event);
   const pathname = decodeURIComponent(url.pathname);
   const root2 = normalize2(PUBLIC_DIR);
-  let filePath = normalize2(join3(root2, pathname));
+  let filePath = normalize2(join2(root2, pathname));
   if (filePath === root2 || filePath.startsWith(root2 + "..") || !filePath.startsWith(root2)) {
-    filePath = join3(root2, "index.html");
+    filePath = join2(root2, "index.html");
   }
   try {
     const s2 = await stat2(filePath);
     if (s2.isDirectory()) {
-      filePath = join3(filePath, "index.html");
+      filePath = join2(filePath, "index.html");
     }
   } catch {
-    filePath = join3(root2, "index.html");
+    filePath = join2(root2, "index.html");
   }
   try {
-    const data = await readFile4(filePath);
+    const data = await readFile3(filePath);
     setHeader(event, "content-type", MIME[extname(filePath)] || "application/octet-stream");
     return data;
   } catch {
