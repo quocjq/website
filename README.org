@@ -1,91 +1,78 @@
-#+TITLE: Lunatix Website
+#+TITLE: lunixose website
 #+AUTHOR: lunixose
-#+DATE: 2026-08-09
+#+DATE: 2026-08-10
 
-Notion-like personal dashboard / editor, self-hosted on the oracle VPS.
-A Nuxt 4 app with a TipTap editor (Vim mode), a left sidebar (Forgejo,
-Pi-hole, Email, Syncthing), local document storage, and password auth.
+Personal dashboard + blog, self-hosted on the oracle VPS.
+
+- Dashboard: status cards for self-hosted services (Forgejo, Syncthing,
+  Email).
+- Blog: public Emacs org notes (=#+public: t=) from ~/root/Notes~, read
+  live from the server and rendered in the browser.
 
 Live: https://lunixose.duckdns.org/
 
 * Stack
 
-- Nuxt 4 (Vue 3, Nitro server)
-- @nuxt/ui v4 (UI layer — toolbar, buttons, sidebar)
-- TipTap v3 (editor) + vim-prosemirror (Vim keybindings)
-- yjs (document model, unused collab currently)
-- nuxt-csurf (CSRF protection)
-- Persistence: JSON docs on disk (DOCS_DIR)
+- React 19 + TypeScript + Vite
+- Tailwind v4 with ~@catppuccin/tailwindcss~ (Catppuccin Mocha)
+- uniorg (org parser, client-side rendering)
+- h3 (Node server: static files + =/api= endpoints)
 - Built + deployed via Nix (flake) to a NixOS systemd service
+
+* Learning
+
+See ~management/documentation.org~ (syntax → web → React → this site)
+and ~management/todolist.org~ (build checklist).
 
 * Repo layout
 
 #+begin_example
-app/
-  app.vue               # root component (NuxtLayout)
-  assets/css/main.css
-  components/
-    AppHeader.vue       # top bar (wordmark, color mode, vim status, toolbar)
-    AppSidebar.vue      # left sidebar: app links + document list + login
-    editor/             # TipTap-related components (vim status, ...)
-  composables/
-    useAuth.ts          # auth state + login/logout
-    useDocs.ts          # doc list/CRUD via API
-    useEditor*.ts       # toolbar, emojis, mentions, suggestions, drag handle
-  layouts/default.vue
-  pages/index.vue       # the editor page
+management/          # learning docs + checklist
 server/
-  api/
-    auth.get.ts         # GET authed? (cookie)
-    auth.post.ts        # login (password) → HMAC cookie
-    auth.delete.ts      # logout
-    docs.get.ts         # list docs
-    docs.post.ts        # create doc
-    docs/[id].get.ts    # get doc content
-    docs/[id].put.ts    # save doc
-    docs/[id].delete.ts # delete doc
-  utils/
-    auth.ts             # admin password, HMAC cookie sign/verify
-    docs.ts             # DOCS_DIR resolution, id sanitisation
-nuxt.config.ts
-flake.nix / nix/        # Nix package (buildNpmPackage)
+  index.ts           # h3 entry: routes + static serving, port 3100
+  utils/             # status API, notes API, service proxies
+src/
+  main.tsx           # React entry
+  App.tsx            # routes
+  components/        # layout (AppShell, Pane) + ui (WidgetCard)
+  hooks/             # useTheme, useWidgetStatus
+  views/             # DashboardView, BlogView, ProjectsView
+  lib/               # api.ts, types.ts
+  assets/css/        # Tailwind + Catppuccin
+nix/package.nix      # Nix package (buildNpmPackage)
 #+end_example
 
 * Run locally (dev)
 
 #+begin_src bash
 npm install
-npm run dev            # http://localhost:3000
+npm run dev            # frontend on :5173 (proxies /api → :3100)
+npm run dev:server     # API server on :3100
 #+end_src
-
-Dev env vars (defaults fine for local):
-- DOCS_DIR — where docs are stored (default ./.data/docs)
-- ADMIN_PASSWORD or ADMIN_PASSWORD_FILE — admin login (default "changeme")
 
 Type-check / build:
 
 #+begin_src bash
 npm run typecheck
-npm run build
-node .output/server/index.mjs   # production preview
+npm run build          # dist/ (web) + dist-server/index.mjs (server)
+npm run preview        # production preview on :3100
 #+end_src
 
 * Deploy (Nix)
 
-The flake builds the SSR bundle:
+The flake builds the site:
 
 #+begin_src bash
-nix build .#default            # output: result/share/lunatix-website/.output/
+nix build .#default    # output: result/share/lunatix-website/
 #+end_src
 
 The lunatix NixOS config pulls this repo as a flake input
-(~modules/community/lix/services/website.nix~) and runs it as a systemd
+(~modules/community/server/website.nix~) and runs it as a systemd
 service:
 
-- ExecStart: node <pkg>/share/lunatix-website/.output/server/index.mjs
+- ExecStart: node <pkg>/share/lunatix-website/index.mjs
 - PORT 3100, user www-data
-- DOCS_DIR=/srv/www/data/docs
-- ADMIN_PASSWORD_FILE=/run/website/admin-password (agenix secret)
+- NOTES_DIR=/root/Notes
 
 To deploy changes:
 
@@ -94,41 +81,16 @@ To deploy changes:
 3. Commit + push lunatix
 4. On oracle: ~nixos-rebuild switch --flake github:quocjq/lunatix#oracle --refresh --no-write-lock-file~
 
-* Using the site
+* API
 
-- Guest: opens the shared "welcome" doc (editable, read-only for create/delete).
-- Admin: click login in sidebar, enter the admin password (agenix secret
-  ~website-admin-password~) → can create/delete docs.
-- Vim mode: toggle in the header; status shows -- NORMAL -- / -- INSERT --.
-- Sidebar apps:
-  - Forgejo: https://git.lunixose.duckdns.org/
-  - Pi-hole: https://dns.lunixose.duckdns.org/
-  - Email / Syncthing: placeholders (backends TBD)
-
-* Auth model
-
-Single shared password (no accounts). Cookie is HMAC-signed
-(server/utils/auth.ts). CSRF via nuxt-csurf — browser requests use
-$csrfFetch (see useAuth.ts / useDocs.ts). The password comes from
-ADMIN_PASSWORD_FILE if set, else ADMIN_PASSWORD, else "changeme".
-
-* Docs API
-
-- GET  /api/docs              → [{id, title, updatedAt}]
-- GET  /api/docs/:id          → {id, title, updatedAt, content}
-- POST /api/docs              → create {id, title, content}
-- PUT  /api/docs/:id          → save {content} (title derived from text)
-- DELETE /api/docs/:id
-
-:id must match [a-z0-9-]+ (path traversal guarded in server/utils/docs.ts).
+- GET  /api/services/:name   → {status, message} for forgejo/syncthing/mail
+- GET  /api/notes            → public note list (metadata)
+- GET  /api/notes/:id        → raw org content
+- GET  /rss.xml              → RSS feed of public notes
 
 * Troubleshooting
 
-- Build fails on Google-fonts fetch: harmless warning offline; real errors
-  are the [error] lines.
 - npmDepsHash mismatch in nix: set lib.fakeHash, build, copy the "got:"
   hash back into nix/package.nix.
-- Nix build missing app/: git-add the file first (cleanSourceWith filters
+- Nix build missing src/: git-add the file first (cleanSourceWith filters
   by git tracking).
-- 403 on /api/auth from curl: that is CSRF working; use the browser or a
-  csrf token.

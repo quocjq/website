@@ -9,28 +9,28 @@
     "build:server": "esbuild server/index.ts --bundle --platform=node --format=esm --outfile=dist-server/index.mjs",
     "build": "npm run build:web && npm run build:server",
     "preview": "node dist-server/index.mjs",
-    "typecheck": "vue-tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.server.json"
+    "typecheck": "tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.server.json"
   },
   "dependencies": {
-    "d3-force": "^3.0.0",
+    "@catppuccin/tailwindcss": "^1.0.0",
     "h3": "^1.15.11",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-router-dom": "^7.18.2",
     "rehype-stringify": "^10.0.1",
-    "tailwindcss": "^4.3.3",
     "uniorg-parse": "^3.2.2",
-    "uniorg-rehype": "^2.2.0",
-    "uniorg-stringify": "^1.4.0",
-    "vue": "^3.5.41",
-    "vue-router": "^5.2.0"
+    "uniorg-rehype": "^2.2.0"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.3",
-    "@types/d3-force": "^3.0.10",
     "@types/node": "^26.2.0",
-    "@vitejs/plugin-vue": "^6.0.8",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^5.1.0",
     "esbuild": "^0.28.2",
+    "tailwindcss": "^4.3.3",
     "tsx": "^4.20.0",
     "typescript": "^6.0.3",
-    "vite": "^8.2.1",
-    "vue-tsc": "^3.3.9"
+    "vite": "^8.2.1"
   }
 }
