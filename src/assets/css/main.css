@@ -31,3 +31,72 @@ body {
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
+.org-content {
+  @apply text-sm leading-relaxed text-ctp-text;
+}
+.org-content h1,
+.org-content h2,
+.org-content h3,
+.org-content h4,
+.org-content h5,
+.org-content h6 {
+  @apply mb-3 mt-6 font-semibold text-ctp-text;
+  scroll-margin-top: 8px;
+}
+.org-content h1 {
+  @apply text-xl;
+}
+.org-content h2 {
+  @apply text-lg;
+}
+.org-content h3 {
+  @apply text-base;
+}
+.org-content p {
+  @apply mb-4;
+}
+.org-content a {
+  @apply text-ctp-blue underline decoration-ctp-blue/40 underline-offset-2 hover:decoration-ctp-blue;
+}
+.org-content ul,
+.org-content ol {
+  @apply mb-4 space-y-1 pl-6;
+}
+.org-content ul {
+  @apply list-disc;
+}
+.org-content ol {
+  @apply list-decimal;
+}
+.org-content blockquote {
+  @apply mb-4 border-l-2 border-ctp-blue px-4 text-ctp-subtext0;
+}
+.org-content code {
+  @apply rounded bg-ctp-mantle px-1 py-0.5 font-mono text-[13px] text-ctp-peach;
+}
+.org-content pre {
+  @apply mb-4 overflow-x-auto rounded border border-ctp-surface1 bg-ctp-mantle p-4;
+}
+.org-content pre code {
+  @apply bg-transparent p-0 text-ctp-text;
+}
+.org-content table {
+  @apply mb-4 w-full border-collapse text-sm;
+}
+.org-content th,
+.org-content td {
+  @apply border border-ctp-surface1 px-3 py-1.5 text-left;
+}
+.org-content th {
+  @apply bg-ctp-mantle font-medium text-ctp-subtext1;
+}
+.org-content hr {
+  @apply my-6 border-ctp-surface1;
+}
+.org-content .checkbox-list-item {
+  @apply flex items-center gap-2;
+}
+.org-content input[type="checkbox"] {
+  @apply accent-ctp-blue;
+}
